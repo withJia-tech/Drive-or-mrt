@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import { FARE_DEFAULTS, PARKING_DEFAULTS } from '../defaults.js';
+import { FARE_DEFAULTS, PARKING_DEFAULTS, LANDMARK_DEFAULTS } from '../defaults.js';
 
 const readJson = async (relative) =>
   JSON.parse(await readFile(fileURLToPath(new URL(relative, import.meta.url)), 'utf8'));
@@ -37,6 +37,16 @@ describe('data files and their inline mirror', () => {
       json,
       PARKING_DEFAULTS,
       'data/parking-defaults.json and defaults.js have drifted apart. ' +
+        'The JSON is the source of truth — update the mirror to match it.',
+    );
+  });
+
+  test('landmarks.json matches LANDMARK_DEFAULTS', async () => {
+    const json = await readJson('../data/landmarks.json');
+    assert.deepEqual(
+      json,
+      LANDMARK_DEFAULTS,
+      'data/landmarks.json and defaults.js have drifted apart. ' +
         'The JSON is the source of truth — update the mirror to match it.',
     );
   });
@@ -83,5 +93,47 @@ describe('the assumption files stay usable', () => {
     const parking = await readJson('../data/parking-defaults.json');
     assert.ok(parking.caveat);
     assert.ok(parking.upgradePath, 'H1 must state how it stops being a heuristic');
+  });
+});
+
+describe('the landmark file stays usable (H9)', () => {
+  // Singapore's rough bounding box. A coordinate outside it is a typo, and a
+  // typo here would silently produce a wildly wrong distance.
+  const SG_BOUNDS = { minLat: 1.15, maxLat: 1.48, minLng: 103.6, maxLng: 104.1 };
+
+  test('the winding factor is a real multiplier of at least 1', async () => {
+    const { windingFactor } = await readJson('../data/landmarks.json');
+    assert.ok(
+      typeof windingFactor === 'number' && windingFactor >= 1,
+      'a road is never shorter than the straight line, so the factor must be >= 1',
+    );
+  });
+
+  test('every place has an id, a label, a group and coordinates inside Singapore', async () => {
+    const { places } = await readJson('../data/landmarks.json');
+    assert.ok(places.length >= 1, 'the picker needs at least one destination');
+    const ids = new Set();
+    for (const p of places) {
+      assert.ok(p.id, 'place needs an id');
+      assert.ok(!ids.has(p.id), `duplicate place id: ${p.id}`);
+      ids.add(p.id);
+      assert.ok(p.label, `${p.id} needs a label`);
+      assert.ok(p.group, `${p.id} needs a group for the dropdown optgroup`);
+      assert.ok(p.source, `${p.id} needs a stated source`);
+      assert.ok(
+        typeof p.lat === 'number' && p.lat >= SG_BOUNDS.minLat && p.lat <= SG_BOUNDS.maxLat,
+        `${p.id} latitude ${p.lat} is outside Singapore`,
+      );
+      assert.ok(
+        typeof p.lng === 'number' && p.lng >= SG_BOUNDS.minLng && p.lng <= SG_BOUNDS.maxLng,
+        `${p.id} longitude ${p.lng} is outside Singapore`,
+      );
+    }
+  });
+
+  test('the heuristic explains itself and states its upgrade path', async () => {
+    const landmarks = await readJson('../data/landmarks.json');
+    assert.ok(landmarks.caveat, 'H9 needs a caveat — the UI shows it to the user');
+    assert.ok(landmarks.upgradePath, 'H9 must state how it stops being a heuristic');
   });
 });

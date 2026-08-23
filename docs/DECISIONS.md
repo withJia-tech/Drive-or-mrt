@@ -208,9 +208,53 @@ Two corrections to the artifact's own code, both a11y:
 The footer's prev/next links pointed at `#`. They are now marked "soon"
 rather than rendering as working links to calculators that do not exist.
 
+## Revision: detect the phone's location (H9)
+
+**The problem it solves.** The one figure a user must supply is the one-way
+distance, and it is the one figure they are least likely to know standing at
+the door. On a phone, the device already knows where it is, so a **Use my
+location** button reads the GPS position and fills the distance in.
+
+**How, without breaking the "no external service" line.** Reading position is
+the Web Geolocation API — a browser capability, not a third-party request, so
+the trust proposition ("we tell you what we assumed, and call nothing home")
+holds. Turning two coordinates into a distance is arithmetic: the haversine
+great-circle distance times a flat winding factor, both in `geo.js`. That put
+the new maths on the *deterministic* side of the split, so it is unit-tested
+like D1-D10 rather than only labelled — `test/geo.test.js`.
+
+**What stays a heuristic, and is treated as one.** Two things are guesses: the
+landmark coordinates and the 1.35 winding factor that stands in for real roads.
+They live in `data/landmarks.json` with a caveat and an upgrade path, mirrored
+in `defaults.js` and guarded by the same drift test as the other data files.
+The estimate is labelled at every surface — the field helper, and an H9 row in
+the assumptions panel — and the field stays editable, so the guess never
+hardens into a claimed fact. The upgrade path is a routing service or an on-map
+pin; it changes only where the two coordinates come from, not the arithmetic.
+
+**Scope held deliberately.** Locating yourself feeds the distance, and the Grab
+fare is already derived from distance (H2), so the taxi estimate updates for
+free. The MRT/bus fare is *not* estimated from distance and was not made to be:
+it stays a figure the user enters from the transit app, and its helper note now
+says so. No reverse geocoding, no address search, no map tiles — each would be
+the external dependency this build exists without.
+
+**Progressive enhancement, verified.** With no permission, a blocked prompt, a
+timeout or an unsupported device, the button reports the reason and the field
+is still typeable — the calculator is exactly what it was before. Geolocation
+needs a secure context, which the live HTTPS site and `localhost` both are.
+
 ## Verification
 
-- `node --test` — 44 unit tests, all passing.
+- `node --test` — 60 unit tests, all passing.
+- 15 browser assertions for "use my location" driven through Chromium at 390px
+  with a mocked GPS fix: the picker reveals only after a location is obtained,
+  the distance auto-fills a plausible km, a nearer landmark yields a shorter
+  distance than a far one, the Grab card reads "Estimated", the assumptions
+  panel carries the H9 provenance, a manual edit clears the stale geo note, and
+  a denied permission shows a legible fallback with the field still usable. No
+  app-resource load failures or uncaught page errors (Google Fonts is blocked
+  by this sandbox and filtered by request URL, as below).
 - 48 browser assertions against the acceptance criteria in section 7, driven
   through Chromium at 360px. All pass. Google Fonts is blocked by this build
   sandbox and is filtered by request URL rather than by console text, so a
@@ -221,4 +265,6 @@ rather than rendering as working links to calculators that do not exist.
 Not verified, and needing a real device: clipboard write on iOS Safari. The
 handler has an explicit failure branch with a `prompt()` escape hatch, but a
 headless browser is not evidence that it behaves on the platform where it is
-most likely to fail.
+most likely to fail. The same caveat applies to the real geolocation prompt on
+iOS and Android — the GPS fix above is mocked, which exercises the wiring and
+the maths but not the platform permission UI or fix accuracy.

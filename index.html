@@ -250,6 +250,34 @@ select {
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
 
+/* ===== USE MY LOCATION (H9) ===== */
+.geo { margin-top: 14px; }
+
+.geo-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); color: var(--ink);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-pill);
+  padding: 11px 16px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+  box-shadow: var(--hard);
+}
+.geo-btn:hover:not(:disabled) {
+  background: var(--cobalt); color: #fff;
+  transform: translate(-1px,-1px); box-shadow: var(--hard-lg);
+}
+.geo-btn:active:not(:disabled) { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+.geo-btn:disabled { opacity: .65; cursor: progress; box-shadow: none; }
+.geo-btn .geo-pin { font-size: 15px; }
+
+.geo-dest { margin-top: 16px; }
+.geo-dest[hidden] { display: none; }
+
+.geo-status { margin-top: 10px; }
+.geo-status:empty { display: none; }
+.geo-status.error { color: var(--coral-deep); font-weight: 700; }
+.geo-status.ok { color: var(--cobalt-deep); font-weight: 700; }
+
 /* ===== SEGMENTED ===== */
 .segmented {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;
@@ -653,6 +681,18 @@ input[type=number] { -moz-appearance: textfield; }
           <input type="number" id="distance" placeholder="Enter distance" min="0" step="0.5" inputmode="decimal" class="has-suffix">
           <span class="input-suffix">km</span>
         </div>
+
+        <div class="geo" id="geoBlock">
+          <button type="button" class="geo-btn" id="geoBtn">
+            <span class="geo-pin" aria-hidden="true">📍</span>
+            <span id="geoBtnLabel">Use my location</span>
+          </button>
+          <div class="geo-dest" id="geoDest" hidden>
+            <label class="field-label" for="geoLandmark">Where are you headed?</label>
+            <select id="geoLandmark"></select>
+          </div>
+          <p class="field-helper geo-status" id="geoStatus" role="status" aria-live="polite"></p>
+        </div>
       </div>
 
       <div class="disclosure" id="disc1">
@@ -860,6 +900,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 <script type="module">
 import { computeAll, shareString, toNumber, round2 } from './calc.js';
+import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 
 const $ = (id) => document.getElementById(id);
@@ -868,9 +909,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;'
 
 /* Assumptions come from /data/*.json, or the built-in mirror if that fetch
    cannot happen. Nothing below runs on numbers it cannot name. */
-const { fares, parking, source } = await loadAssumptions();
+const { fares, parking, landmarks, source } = await loadAssumptions();
 
-const state = { context: null, rateOverridden: false };
+const state = { context: null, rateOverridden: false, distanceFromGeo: null };
+const geoState = { origin: null };
 let lastResult = null;
 let lastMeta = null;
 
@@ -1052,6 +1094,9 @@ function paintAssumptions(r, input) {
     ['Walking time', 'Priced separately and never folded into the MRT headline (H8).'],
     ['Reviewed', `${fares.lastReviewed}. Assumptions version ${fares.assumptionsVersion}.`],
   ];
+  if (state.distanceFromGeo) {
+    rows.unshift(['Distance', `Estimated at ~${state.distanceFromGeo.km} km from your detected location to ${state.distanceFromGeo.label}, straight-line ×${landmarks.windingFactor} (H9). Not a routed drive — edit the field for an exact figure.`]);
+  }
   $('assumeList').replaceChildren(...rows.map(([k, v]) => {
     const li = document.createElement('li');
     const b = document.createElement('b');
@@ -1200,6 +1245,101 @@ $('parkRate').addEventListener('input', () => {
 
 ['distance','parkHours','mrtFare','grabFare','petrol','fuel','erp','walkTime','hourlyRate']
   .forEach((id) => $(id).addEventListener('input', sync));
+
+/* ------------------------------------------------------ use my location (H9)
+   The one figure the user has to know is the distance. The phone already
+   knows where it is, so we read its GPS position (the standard Geolocation
+   API — iOS Safari and Android Chrome both support it), pair it with a
+   built-in Singapore landmark, and turn the two coordinates into a distance
+   with the pure maths in geo.js.
+
+   It is progressive enhancement: reading position is the only side effect, it
+   fails loudly and legibly, and the distance field stays fully typeable the
+   whole time. The result is a labelled *estimate* — a straight line scaled by
+   a flat winding factor, not a routed drive — so it never overstates itself.
+   Because the Grab fare is derived from distance (H2), detecting a location
+   updates the taxi estimate too; the MRT fare stays a figure you enter from
+   the transit app, never guessed from distance. */
+function setGeoStatus(msg, kind) {
+  const el = $('geoStatus');
+  el.textContent = msg || '';
+  el.classList.remove('error', 'ok');
+  if (kind) el.classList.add(kind);
+}
+
+/* One <optgroup> per landmark group, in first-seen order. */
+const geoGroups = [...new Set(landmarks.places.map((p) => p.group))];
+$('geoLandmark').replaceChildren(
+  Object.assign(document.createElement('option'), { value: '', textContent: 'Select your destination' }),
+  ...geoGroups.map((group) => {
+    const og = document.createElement('optgroup');
+    og.label = group;
+    landmarks.places
+      .filter((p) => p.group === group)
+      .forEach((p) => og.appendChild(
+        Object.assign(document.createElement('option'), { value: p.id, textContent: p.label })));
+    return og;
+  }),
+);
+
+$('geoBtn').addEventListener('click', () => {
+  if (!('geolocation' in navigator)) {
+    setGeoStatus("This device can't share its location — type the distance in above.", 'error');
+    return;
+  }
+  $('geoBtn').disabled = true;
+  $('geoBtnLabel').textContent = 'Locating…';
+  setGeoStatus('Asking your phone where it is — allow the location prompt.', null);
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      geoState.origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const acc = Math.round(pos.coords.accuracy);
+      $('geoBtn').disabled = false;
+      $('geoBtnLabel').textContent = 'Update location';
+      $('geoDest').hidden = false;
+      setGeoStatus(`Found you to within about ${acc} m. Now pick where you're headed.`, 'ok');
+      $('geoLandmark').focus();
+    },
+    (err) => {
+      $('geoBtn').disabled = false;
+      $('geoBtnLabel').textContent = 'Use my location';
+      const msg = {
+        1: 'Location permission was blocked. You can still type the distance in above.',
+        2: "Couldn't get a fix right now. Type the distance in above instead.",
+        3: 'Locating timed out. Type the distance in above instead.',
+      }[err.code] || "Couldn't read your location. Type the distance in above instead.";
+      setGeoStatus(msg, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+  );
+});
+
+$('geoLandmark').addEventListener('change', () => {
+  const place = landmarks.places.find((p) => p.id === $('geoLandmark').value);
+  if (!place || !geoState.origin) return;
+
+  const raw = estimateTripDistanceKm(geoState.origin, place, landmarks.windingFactor);
+  /* One decimal only: a GPS-derived estimate to the metre would be false
+     precision. Cap at the same ceiling the typed field uses. */
+  const km = Math.min(Math.round(raw * 10) / 10, fares.limits.maxDistanceKm);
+
+  $('distance').value = km;
+  state.distanceFromGeo = { label: place.label, km };
+  setGeoStatus(
+    `~${km} km to ${place.label} by road (straight-line ×${landmarks.windingFactor}, estimate). Edit the field if you know better.`,
+    'ok',
+  );
+  sync(); // programmatic value changes do not fire 'input', so sync by hand
+});
+
+/* If the user overrides the distance by hand, the geo estimate no longer
+   describes what is in the field — drop the claim rather than let it go stale. */
+$('distance').addEventListener('input', () => {
+  if (!state.distanceFromGeo) return;
+  state.distanceFromGeo = null;
+  setGeoStatus('');
+});
 
 $('calcBtn').addEventListener('click', calculate);
 

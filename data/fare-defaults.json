@@ -13,7 +13,7 @@
     "mrtFare": 1.8,
     "walkTime": 10,
     "hourlyRate": 25,
-    "fareNote": "Cross-island averages around $1.80.",
+    "fareNote": "Check the SMRT or bus app for the exact fare — we don't estimate it. Cross-island averages around $1.80.",
     "hourlyNote": "$4,000 a month is roughly $25/hr (MoneySense)."
   },
   "grabEstimate": {
