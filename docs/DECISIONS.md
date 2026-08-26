@@ -152,7 +152,7 @@ incomplete without nagging.
 
 ---
 
-## Revision: design port, and the agentic question closed
+## Revision: design port, and the original agentic decision
 
 **The visual design is Mizuno's, ported from her artifact.** The first build
 used an editorial serif treatment; it was replaced wholesale by the maximalist
@@ -175,16 +175,21 @@ Three things changed in the model as a result, all adopted from the artifact:
 - **A "if you price the walk" line.** Shown as a soft secondary row. H8 still
   holds: the MRT headline is fare-only, and a test asserts it.
 
-**Agentic capability: none, and none warranted.** Tier 2 in the handoff —
-learning driving habits, adaptive defaults from history — is not built and is
-not recommended. Assessed against the eight-factor lens, this problem is not
-orchestration-driven or credulity-driven; it is a ten-rule arithmetic problem
-over numbers the user types in. The rung on the ladder is *deterministic
-code*, and the rung above (single agent + tools) buys nothing, because there
-is no judgment to delegate: `parkRate × parkHours` is not an inference. The
-one real accuracy gap is data, and data is a CSV.
+**Superseded product decision.** The earlier build concluded that no agent was
+warranted because the calculations themselves are deterministic. The product
+direction has since been clarified: this is a bounded personal utility agent
+whose value is decision compression—interpreting a trip, asking one useful
+question and explaining the deterministic result—not replacing arithmetic
+with inference.
 
-Recorded here because "no agent needed" is a finding, not an omission.
+The original technical insight still holds. `parkRate × parkHours` remains in
+`calc.js`; the agent cannot invent or modify fares, durations or rankings. The
+agent has no booking/purchasing tools, external communications, durable memory,
+hidden reward function or opaque reinforcement learning. Better data remains
+the primary accuracy upgrade.
+
+This superseding decision is implemented in `agent.js` and locked by
+`test/agent.test.js`.
 
 ## Things kept from the original build
 
