@@ -130,6 +130,80 @@ export function journeyTimes({ distance, walkTime }, speeds) {
   };
 }
 
+/** One-way journey estimates used by the arrival-first recommendation layer. */
+export function oneWayJourneyTimes({ distance, walkTime }, speeds) {
+  return {
+    drive: (distance / speeds.driveKmh) * 60 + speeds.driveBufferMin,
+    mrt: (distance / speeds.mrtKmh) * 60 + walkTime,
+    grab: (distance / speeds.grabKmh) * 60 + speeds.grabBufferMin,
+  };
+}
+
+const asDate = (value) => {
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+/**
+ * Recommend a mode for a particular timing request.
+ *
+ * This is deliberately deterministic and conservative. A mode must satisfy
+ * the requested clock constraint before its cost can make it preferable.
+ * Public transport wins ties; a premium option wins only when it materially
+ * improves feasibility or the departure time available to the user.
+ */
+export function recommendForSchedule({
+  timingMode = 'leave_now',
+  requestedAt = null,
+  now = new Date(),
+  bufferMin = 10,
+  costs,
+  durations,
+}) {
+  const baseNow = asDate(now) || new Date();
+  const requested = asDate(requestedAt);
+  const ids = ['mrt', 'drive', 'grab'];
+  const candidates = ids.map((id) => {
+    const durationMin = Math.max(0, Number(durations[id]) || 0);
+    let departAt = new Date(baseNow);
+    if (timingMode === 'depart_at' && requested) departAt = new Date(requested);
+    if (timingMode === 'arrive_by' && requested) {
+      departAt = new Date(requested.getTime() - (durationMin + bufferMin) * 60000);
+    }
+    const arriveAt = new Date(departAt.getTime() + durationMin * 60000);
+    const feasible = timingMode !== 'arrive_by' || !requested || departAt >= baseNow;
+    return { id, cost: costs[id], durationMin, departAt, arriveAt, feasible };
+  });
+
+  const feasible = candidates.filter((candidate) => candidate.feasible);
+  let recommended;
+  if (timingMode === 'arrive_by' && feasible.length) {
+    // The latest safe departure protects the user's time. Within five minutes,
+    // prefer the lower-cost mode, with MRT first on a true tie.
+    const latest = Math.max(...feasible.map((candidate) => candidate.departAt.getTime()));
+    const nearLatest = feasible.filter((candidate) => latest - candidate.departAt.getTime() <= 5 * 60000);
+    recommended = nearLatest.reduce((best, candidate) =>
+      candidate.cost < best.cost ? candidate : best);
+  } else {
+    const pool = feasible.length ? feasible : candidates;
+    // For leave/depart requests, first avoid a premium when MRT is no more
+    // than 15 minutes slower than the fastest available option.
+    const fastest = Math.min(...pool.map((candidate) => candidate.durationMin));
+    const sensible = pool.filter((candidate) => candidate.durationMin <= fastest + 15);
+    recommended = sensible.reduce((best, candidate) =>
+      candidate.cost < best.cost ? candidate : best);
+  }
+
+  return {
+    timingMode,
+    requestedAt: requested,
+    bufferMin,
+    recommended: recommended.id,
+    allFeasible: candidates.every((candidate) => candidate.feasible),
+    candidates,
+  };
+}
+
 /* --------------------------------------------------------------- aggregate */
 
 /**
@@ -169,6 +243,7 @@ export function computeAll(input, assumptions) {
     band: verdictBand({ drive, mrt }, assumptions.verdict.thresholdSgd),
     delta: round2(Math.abs(drive - mrt)),
     times: journeyTimes(input, assumptions.speeds),
+    oneWayTimes: oneWayJourneyTimes(input, assumptions.speeds),
   };
 }
 

@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drive There or MRT? — Is It Worth It?</title>
-<meta name="description" content="A per-trip honesty check for Singapore drivers. Work out what one journey really costs by car, MRT or Grab — including the parking bill that usually decides it.">
+<title>Personal Utility Agent SG — Drive, MRT or Grab?</title>
+<meta name="description" content="A mobile-first personal utility agent that helps Singapore travellers compare driving, MRT and Grab for one trip. It recommends and explains; it never books rides.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Drive There or MRT?">
-<meta property="og:description" content="Parking at the other end is usually what swings it. One trip, three ways.">
+<meta property="og:title" content="Personal Utility Agent SG — Drive, MRT or Grab?">
+<meta property="og:description" content="Tell it the trip. It sets up a transparent comparison and explains the call without booking anything for you.">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./shared/tokens.css">
 
 <style>
@@ -79,7 +79,6 @@ h1 {
   font-size: 46px; font-weight: 800;
   line-height: .92; letter-spacing: -.045em;
   color: var(--ink);
-  font-variation-settings: "opsz" 96;
 }
 h1 .hl {
   background: var(--tangerine);
@@ -159,6 +158,7 @@ h1 .or {
   margin-top: 3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.card-summary:empty { display: none; }
 
 .chevron {
   width: 30px; height: 30px; border-radius: 9px;
@@ -193,12 +193,6 @@ h1 .or {
   text-transform: uppercase;
   color: var(--ink); margin-bottom: 8px;
 }
-.field-label .req {
-  color: #fff; background: var(--coral);
-  font-size: 9px; padding: 2px 6px; border-radius: var(--radius-pill);
-  margin-left: 6px; letter-spacing: .08em;
-}
-
 .field-helper {
   font-size: 12px; font-weight: 500; color: var(--ink-soft);
   margin-top: 8px; line-height: 1.4; padding-left: 2px;
@@ -250,6 +244,38 @@ select {
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
 
+/* ===== USE MY LOCATION (H9) ===== */
+.geo { margin-bottom: 4px; }
+
+.geo-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); color: var(--ink);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-pill);
+  padding: 11px 16px; min-height: 44px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+  box-shadow: var(--hard);
+}
+.geo-btn:hover:not(:disabled) {
+  background: var(--cobalt); color: #fff;
+  transform: translate(-1px,-1px); box-shadow: var(--hard-lg);
+}
+.geo-btn:active:not(:disabled) { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+.geo-btn:disabled { opacity: .65; cursor: progress; box-shadow: none; }
+.geo-btn .geo-pin { font-size: 15px; }
+.geo-btn.primary {
+  width: 100%; justify-content: center;
+  background: var(--cobalt); color: #fff;
+}
+.geo-btn.primary:hover:not(:disabled) { background: var(--cobalt-deep); }
+
+.geo-dest { margin-top: 16px; }
+
+.geo-status { margin-top: 10px; }
+.geo-status:empty { display: none; }
+.geo-status.error { color: var(--coral-deep); font-weight: 700; }
+.geo-status.ok { color: var(--cobalt-deep); font-weight: 700; }
+
 /* ===== SEGMENTED ===== */
 .segmented {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;
@@ -292,13 +318,13 @@ input[type=number] { -moz-appearance: textfield; }
   border: 2px solid var(--ink);
   display: flex; align-items: center; justify-content: center;
 }
-.disclosure.open .disclosure-toggle .arrow { transform: rotate(180deg); }
+.disclosure.open > .disclosure-toggle .arrow { transform: rotate(180deg); }
 
 .disclosure-body {
   max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
   transition: max-height .35s cubic-bezier(.2,.8,.2,1), opacity .25s;
 }
-.disclosure.open .disclosure-body {
+.disclosure.open > .disclosure-body {
   max-height: 900px; opacity: 1; visibility: visible;
   padding-top: 6px; padding-bottom: 6px;
 }
@@ -308,7 +334,7 @@ input[type=number] { -moz-appearance: textfield; }
 .chip {
   background: var(--card);
   border: 2.5px solid var(--ink);
-  border-radius: var(--radius-pill); padding: 10px 15px;
+  border-radius: var(--radius-pill); padding: 10px 15px; min-height: 44px;
   font-family: var(--font-body);
   font-size: 13px; font-weight: 700;
   color: var(--ink); cursor: pointer; transition: all .18s;
@@ -372,7 +398,6 @@ input[type=number] { -moz-appearance: textfield; }
   font-size: 42px; font-weight: 800;
   line-height: .94; letter-spacing: -.045em;
   color: var(--ink); margin-bottom: 24px;
-  font-variation-settings: "opsz" 96;
 }
 .result-title:focus { outline: none; }
 .result-title .accent {
@@ -548,6 +573,15 @@ input[type=number] { -moz-appearance: textfield; }
 .copy-btn:hover { background: var(--pink); color: #fff; transform: translate(-1px,-1px); box-shadow: var(--hard-lg); }
 .copy-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
 .copy-btn.copied { background: var(--cobalt); color: #fff; }
+.result-actions { display: grid; gap: 10px; }
+.edit-assumptions-btn {
+  width: 100%; min-height: 44px; background: transparent;
+  border: 2px solid var(--ink); border-radius: var(--radius-pill);
+  padding: 12px 16px; font: 700 14px var(--font-body); color: var(--ink);
+  cursor: pointer;
+}
+.edit-assumptions-btn:hover { background: var(--tangerine-pale); }
+.card[hidden], .parking-clarifier[hidden] { display: none; }
 
 /* ===== ASSUMPTIONS ===== */
 .assumptions { margin-top: 16px; }
@@ -622,12 +656,11 @@ input[type=number] { -moz-appearance: textfield; }
 
   <header class="masthead">
     <div class="issue-strip">
-      <span class="issue-tag fill-coral">Issue 04b</span>
       <span class="issue-tag">Singapore</span>
       <span class="issue-tag fill-tangerine">Per-trip</span>
     </div>
-    <h1>Drive there<span class="or">or</span><br><span class="hl">take the train.</span></h1>
-    <p class="deck">A per-trip honesty check for the driver standing at the door, deciding right now.</p>
+    <h1>Drive, MRT<span class="or">or</span><br><span class="hl">Grab?</span></h1>
+    <p class="deck">One trip. Three ways. See what each really costs.</p>
   </header>
 
   <div class="progress" role="img" aria-label="Progress through the required fields">
@@ -647,43 +680,74 @@ input[type=number] { -moz-appearance: textfield; }
       <span class="chevron"><svg viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 6l5-5 5 5" stroke="#1C1015" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </button>
     <div class="card-body" id="body1">
-      <div class="field">
-        <label class="field-label" for="distance">Distance, one way <span class="req">Required</span></label>
-        <div class="input-wrap">
-          <input type="number" id="distance" placeholder="Enter distance" min="0" step="0.5" inputmode="decimal" class="has-suffix">
-          <span class="input-suffix">km</span>
+      <div class="geo" id="geoBlock">
+        <div class="field">
+          <div class="field-label">Starting point</div>
+          <button type="button" class="geo-btn primary" id="geoBtn">
+            <span class="geo-pin" aria-hidden="true">📍</span>
+            <span id="geoBtnLabel">Use my current location</span>
+          </button>
+          <p class="field-helper geo-status" id="geoStatus" role="status" aria-live="polite"></p>
+        </div>
+        <div class="field geo-dest" id="geoDest">
+          <label class="field-label" for="geoLandmark">Where are you headed?</label>
+          <select id="geoLandmark"></select>
+        </div>
+        <div class="field parking-clarifier" id="parkingClarifier" hidden>
+          <label class="field-label" for="parkHours">About how long will you be there?</label>
+          <div class="input-wrap">
+            <input type="number" id="parkHours" placeholder="Enter hours" min="0" step="0.5" inputmode="decimal" class="has-suffix">
+            <span class="input-suffix">hrs</span>
+          </div>
+          <p class="field-helper">We use this to estimate parking. You can correct the other assumptions after the result.</p>
         </div>
       </div>
 
-      <div class="disclosure" id="disc1">
-        <button type="button" class="disclosure-toggle" data-disc="disc1" aria-expanded="false" aria-controls="disc1body">
-          <span>Cost assumptions — petrol, fuel economy, ERP</span>
+      <div class="disclosure" id="discManual">
+        <button type="button" class="disclosure-toggle" data-disc="discManual" aria-expanded="false" aria-controls="discManualBody">
+          <span>Enter distance manually</span>
           <span class="arrow" aria-hidden="true">▼</span>
         </button>
-        <div class="disclosure-body" id="disc1body">
+        <div class="disclosure-body" id="discManualBody">
           <div class="field">
-            <label class="field-label" for="petrol">Petrol per litre</label>
+            <label class="field-label" for="distance">Distance, one way</label>
             <div class="input-wrap">
-              <span class="input-prefix">$</span>
-              <input type="number" id="petrol" min="0" step="0.01" inputmode="decimal" class="has-prefix">
+              <input type="number" id="distance" placeholder="Enter distance" min="0" step="0.5" inputmode="decimal" class="has-suffix">
+              <span class="input-suffix">km</span>
             </div>
-            <p class="field-helper" id="petrolNote"></p>
           </div>
-          <div class="field">
-            <label class="field-label" for="fuel">Fuel consumption</label>
-            <div class="input-wrap">
-              <input type="number" id="fuel" min="1" step="0.5" inputmode="decimal" class="has-suffix">
-              <span class="input-suffix">km/L</span>
+
+          <div class="disclosure" id="disc1">
+            <button type="button" class="disclosure-toggle" data-disc="disc1" aria-expanded="false" aria-controls="disc1body">
+              <span>Adjust petrol, fuel economy or ERP</span>
+              <span class="arrow" aria-hidden="true">▼</span>
+            </button>
+            <div class="disclosure-body" id="disc1body">
+              <div class="field">
+                <label class="field-label" for="petrol">Petrol per litre</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="petrol" min="0" step="0.01" inputmode="decimal" class="has-prefix">
+                </div>
+                <p class="field-helper" id="petrolNote"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="fuel">Fuel consumption</label>
+                <div class="input-wrap">
+                  <input type="number" id="fuel" min="1" step="0.5" inputmode="decimal" class="has-suffix">
+                  <span class="input-suffix">km/L</span>
+                </div>
+                <p class="field-helper" id="fuelNote"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="erp">ERP for this route</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="erp" min="0" step="0.50" inputmode="decimal" class="has-prefix">
+                </div>
+                <p class="field-helper">Add only if your route hits gantries. We cannot read them live.</p>
+              </div>
             </div>
-            <p class="field-helper" id="fuelNote"></p>
-          </div>
-          <div class="field">
-            <label class="field-label" for="erp">ERP for this route</label>
-            <div class="input-wrap">
-              <span class="input-prefix">$</span>
-              <input type="number" id="erp" min="0" step="0.50" inputmode="decimal" class="has-prefix">
-            </div>
-            <p class="field-helper">Add only if your route hits gantries. We cannot read them live.</p>
           </div>
         </div>
       </div>
@@ -691,12 +755,12 @@ input[type=number] { -moz-appearance: textfield; }
   </div>
 
   <!-- 02 -->
-  <div class="card" id="card2">
+  <div class="card" id="card2" hidden>
     <button type="button" class="card-header" aria-expanded="true" aria-controls="body2">
       <span class="card-num">02</span>
       <span class="card-header-text">
-        <span class="card-title">Parking</span>
-        <span class="card-summary" id="sum2">Usually what swings the answer</span>
+        <span class="card-title">Parking assumption</span>
+        <span class="card-summary" id="sum2"></span>
       </span>
       <span class="chevron"><svg viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 6l5-5 5 5" stroke="#1C1015" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </button>
@@ -713,22 +777,15 @@ input[type=number] { -moz-appearance: textfield; }
         </div>
         <p class="field-helper" id="parkHelper">Auto-fills when you pick a destination type.</p>
       </div>
-      <div class="field">
-        <label class="field-label" for="parkHours">How long will you park? <span class="req">Required</span></label>
-        <div class="input-wrap">
-          <input type="number" id="parkHours" placeholder="Enter hours" min="0" step="0.5" inputmode="decimal" class="has-suffix">
-          <span class="input-suffix">hrs</span>
-        </div>
-      </div>
     </div>
   </div>
 
   <!-- 03 -->
-  <div class="card" id="card3">
+  <div class="card" id="card3" hidden>
     <button type="button" class="card-header" aria-expanded="true" aria-controls="body3">
       <span class="card-num">03</span>
       <span class="card-header-text">
-        <span class="card-title">Compare against</span>
+        <span class="card-title">Fare assumptions</span>
         <span class="card-summary" id="sum3">Both are calculated either way</span>
       </span>
       <span class="chevron"><svg viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 6l5-5 5 5" stroke="#1C1015" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -804,18 +861,21 @@ input[type=number] { -moz-appearance: textfield; }
 
   <!-- RESULT -->
   <div class="result" id="result" hidden aria-labelledby="resultTitle">
-    <div class="result-flag">The verdict</div>
+    <div class="result-flag">Agent recommendation</div>
     <h2 class="result-title" id="resultTitle" tabindex="-1"></h2>
     <div class="compare" id="compare"></div>
     <div class="breakdown" id="driveBreakdown"></div>
     <div class="breakdown" id="mrtBreakdown"></div>
     <div class="callout" id="callout"></div>
     <div class="verdict">
-      <div class="verdict-label">Bottom line</div>
+      <div class="verdict-label">Why this call</div>
       <div class="verdict-text" id="verdictText"></div>
       <div class="verdict-modifier" id="verdictModifier" hidden></div>
     </div>
-    <button type="button" class="copy-btn" id="copyBtn"><span id="copyLabel">Clip for the group chat</span></button>
+    <div class="result-actions">
+      <button type="button" class="copy-btn" id="copyBtn"><span id="copyLabel">Clip for the group chat</span></button>
+      <button type="button" class="edit-assumptions-btn" id="editAssumptionsBtn">Edit assumptions</button>
+    </div>
 
     <div class="assumptions">
       <div class="disclosure" id="discA">
@@ -860,7 +920,9 @@ input[type=number] { -moz-appearance: textfield; }
 
 <script type="module">
 import { computeAll, shareString, toNumber, round2 } from './calc.js';
+import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
+import { destinationTypeForPlace } from './agent.js';
 
 const $ = (id) => document.getElementById(id);
 const money = (n) => `$${n.toFixed(2)}`;
@@ -868,9 +930,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;'
 
 /* Assumptions come from /data/*.json, or the built-in mirror if that fetch
    cannot happen. Nothing below runs on numbers it cannot name. */
-const { fares, parking, source } = await loadAssumptions();
+const { fares, parking, landmarks, source } = await loadAssumptions();
 
-const state = { context: null, rateOverridden: false };
+const state = { context: null, rateOverridden: false, distanceFromGeo: null };
+const geoState = { origin: null };
 let lastResult = null;
 let lastMeta = null;
 
@@ -896,6 +959,12 @@ $('destType').replaceChildren(
     Object.assign(document.createElement('option'), { value: d.id, textContent: d.label })),
 );
 
+function setContext(contextId) {
+  state.context = contextId || null;
+  document.querySelectorAll('#chips .chip').forEach((el, i) =>
+    el.setAttribute('aria-pressed', String(CONTEXTS[i].id === state.context)));
+}
+
 $('chips').replaceChildren(...CONTEXTS.map((c) => {
   const b = document.createElement('button');
   b.type = 'button';
@@ -903,9 +972,7 @@ $('chips').replaceChildren(...CONTEXTS.map((c) => {
   b.textContent = c.label;
   b.setAttribute('aria-pressed', 'false');
   b.addEventListener('click', () => {
-    state.context = state.context === c.id ? null : c.id;
-    document.querySelectorAll('#chips .chip').forEach((el, i) =>
-      el.setAttribute('aria-pressed', String(CONTEXTS[i].id === state.context)));
+    setContext(state.context === c.id ? null : c.id);
     sync();
     if (lastResult) paintVerdict(lastResult); // copy only — totals untouched
   });
@@ -963,11 +1030,12 @@ function sync() {
   const hrs = read('parkHours');
   const rate = read('parkRate');
   const dest = destById($('destType').value);
+  const placeSelected = Boolean($('geoLandmark').value);
 
   $('sum1').textContent = distance ? `${distance} km each way` : 'How far are you going?';
   $('sum2').textContent = (dest && hrs !== null)
     ? `${dest.shortLabel} · ${hrs}h at ${money(rate ?? 0)}/hr`
-    : 'Usually what swings the answer';
+    : '';
   $('sum3').textContent =
     `MRT ${money(read('mrtFare', fares.alternatives.mrtFare))} · Grab ${read('grabFare') === null ? 'estimated' : money(read('grabFare'))}`;
   const ctx = CONTEXTS.find((c) => c.id === state.context);
@@ -989,11 +1057,14 @@ function sync() {
         : `Typical for a ${dest.shortLabel}. Override if you know the exact rate.`;
   }
 
-  const ready = distance !== null && hrs !== null;
+  const ready = placeSelected && distance !== null && hrs !== null && dest && rate !== null;
   $('calcBtn').disabled = !ready;
-  $('calcLabel').textContent = ready ? 'Calculate'
-    : distance === null ? 'Enter distance to begin'
-    : 'Enter parking hours';
+  $('calcLabel').textContent = ready ? 'Compare my options'
+    : !placeSelected ? 'Choose your destination'
+    : distance === null ? 'Use location or enter distance'
+    : hrs === null ? 'How long will you be there?'
+    : !dest || rate === null ? 'Review parking assumption'
+    : 'Compare my options';
 
   ['distance','parkHours','mrtFare','grabFare','parkRate'].forEach((id) =>
     $(id).classList.toggle('filled', $(id).value.trim() !== ''));
@@ -1052,6 +1123,9 @@ function paintAssumptions(r, input) {
     ['Walking time', 'Priced separately and never folded into the MRT headline (H8).'],
     ['Reviewed', `${fares.lastReviewed}. Assumptions version ${fares.assumptionsVersion}.`],
   ];
+  if (state.distanceFromGeo) {
+    rows.unshift(['Distance', `Estimated at ~${state.distanceFromGeo.km} km from your detected location to ${state.distanceFromGeo.label}, straight-line ×${landmarks.windingFactor} (H9). Not a routed drive — edit the field for an exact figure.`]);
+  }
   $('assumeList').replaceChildren(...rows.map(([k, v]) => {
     const li = document.createElement('li');
     const b = document.createElement('b');
@@ -1136,8 +1210,16 @@ function calculate() {
 /* --------------------------------------------------------------- plumbing */
 function collapse(cardId) {
   const card = $(cardId);
+  if (!card) return;
   card.classList.add('collapsed');
   card.querySelector('.card-header').setAttribute('aria-expanded', 'false');
+}
+
+function expand(cardId) {
+  const card = $(cardId);
+  if (!card) return;
+  card.classList.remove('collapsed');
+  card.querySelector('.card-header').setAttribute('aria-expanded', 'true');
 }
 
 document.querySelectorAll('.card-header').forEach((btn) => {
@@ -1201,7 +1283,140 @@ $('parkRate').addEventListener('input', () => {
 ['distance','parkHours','mrtFare','grabFare','petrol','fuel','erp','walkTime','hourlyRate']
   .forEach((id) => $(id).addEventListener('input', sync));
 
+/* ------------------------------------------------------ use my location (H9)
+   The one figure the user has to know is the distance. The phone already
+   knows where it is, so we read its GPS position (the standard Geolocation
+   API — iOS Safari and Android Chrome both support it), pair it with a
+   built-in Singapore landmark, and turn the two coordinates into a distance
+   with the pure maths in geo.js.
+
+   It is progressive enhancement: reading position is the only side effect, it
+   fails loudly and legibly, and the distance field stays fully typeable the
+   whole time. The result is a labelled *estimate* — a straight line scaled by
+   a flat winding factor, not a routed drive — so it never overstates itself.
+   Because the Grab fare is derived from distance (H2), detecting a location
+   updates the taxi estimate too; the MRT fare stays a figure you enter from
+   the transit app, never guessed from distance. */
+function setGeoStatus(msg, kind) {
+  const el = $('geoStatus');
+  el.textContent = msg || '';
+  el.classList.remove('error', 'ok');
+  if (kind) el.classList.add(kind);
+}
+
+function updateGeoDistance() {
+  const place = landmarks.places.find((p) => p.id === $('geoLandmark').value);
+  if (!place || !geoState.origin) return false;
+
+  const raw = estimateTripDistanceKm(geoState.origin, place, landmarks.windingFactor);
+  /* One decimal only: a GPS-derived estimate to the metre would be false
+     precision. Cap at the same ceiling the typed field uses. */
+  const km = Math.min(Math.round(raw * 10) / 10, fares.limits.maxDistanceKm);
+
+  $('distance').value = km;
+  state.distanceFromGeo = { label: place.label, km };
+  setGeoStatus(
+    `~${km} km to ${place.label} by road (straight-line ×${landmarks.windingFactor}, estimate). Edit the field if you know better.`,
+    'ok',
+  );
+  sync(); // programmatic value changes do not fire 'input', so sync by hand
+  return true;
+}
+
+function applyDestinationInference(place) {
+  if (!place) {
+    $('parkingClarifier').hidden = true;
+    return;
+  }
+
+  const inferredType = destinationTypeForPlace(place);
+  $('destType').value = inferredType || '';
+  $('destType').dispatchEvent(new Event('change'));
+  $('parkingClarifier').hidden = false;
+
+  const inferredDestination = destById(inferredType);
+  if (!inferredDestination || inferredDestination.rate === null) {
+    $('card2').hidden = false;
+    expand('card2');
+    $('parkHelper').textContent = 'We could not infer a reliable parking rate. Enter or confirm it here.';
+  }
+}
+
+/* One <optgroup> per landmark group, in first-seen order. */
+const geoGroups = [...new Set(landmarks.places.map((p) => p.group))];
+$('geoLandmark').replaceChildren(
+  Object.assign(document.createElement('option'), { value: '', textContent: 'Select your destination' }),
+  ...geoGroups.map((group) => {
+    const og = document.createElement('optgroup');
+    og.label = group;
+    landmarks.places
+      .filter((p) => p.group === group)
+      .forEach((p) => og.appendChild(
+        Object.assign(document.createElement('option'), { value: p.id, textContent: p.label })));
+    return og;
+  }),
+);
+
+$('geoBtn').addEventListener('click', () => {
+  if (!('geolocation' in navigator)) {
+    setGeoStatus("This device can't share its location — enter the distance manually below.", 'error');
+    return;
+  }
+  $('geoBtn').disabled = true;
+  $('geoBtnLabel').textContent = 'Locating…';
+  setGeoStatus('Asking your phone where it is — allow the location prompt.', null);
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      geoState.origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const acc = Math.round(pos.coords.accuracy);
+      $('geoBtn').disabled = false;
+      $('geoBtnLabel').textContent = 'Update location';
+      if (!updateGeoDistance()) {
+        const accuracy = Number.isFinite(acc) && acc >= 0 ? ` to within about ${acc} m` : '';
+        setGeoStatus(`Found you${accuracy}. Now pick where you're headed.`, 'ok');
+        $('geoLandmark').focus();
+      }
+    },
+    (err) => {
+      $('geoBtn').disabled = false;
+      $('geoBtnLabel').textContent = 'Use my current location';
+      const msg = {
+        1: 'Location permission was blocked. Enter the distance manually below instead.',
+        2: "Couldn't get a fix right now. Enter the distance manually below instead.",
+        3: 'Locating timed out. Enter the distance manually below instead.',
+      }[err.code] || "Couldn't read your location. Enter the distance manually below instead.";
+      setGeoStatus(msg, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+  );
+});
+
+$('geoLandmark').addEventListener('change', () => {
+  const place = landmarks.places.find((p) => p.id === $('geoLandmark').value);
+  applyDestinationInference(place);
+  updateGeoDistance();
+  if (place) $('parkHours').focus();
+});
+
+/* If the user overrides the distance by hand, the geo estimate no longer
+   describes what is in the field — drop the claim rather than let it go stale. */
+$('distance').addEventListener('input', () => {
+  if (!state.distanceFromGeo) return;
+  state.distanceFromGeo = null;
+  setGeoStatus('');
+});
+
 $('calcBtn').addEventListener('click', calculate);
+
+$('editAssumptionsBtn').addEventListener('click', () => {
+  ['card2', 'card3'].forEach((id) => {
+    $(id).hidden = false;
+    expand(id);
+  });
+  $('card2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('destType').focus({ preventScroll: true });
+});
 
 /* Clipboard, with a visible failure branch. Older iOS Safari and any
    non-secure context refuse the write, and a button that silently does

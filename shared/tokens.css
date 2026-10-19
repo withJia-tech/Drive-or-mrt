@@ -47,9 +47,9 @@
   --hard-cobalt: 5px 5px 0 var(--cobalt-deep);
 
   /* Type */
-  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --font-display: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-body: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
 
   /* Form */
   --radius-pill: 100px;
