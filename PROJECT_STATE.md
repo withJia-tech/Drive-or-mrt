@@ -105,3 +105,22 @@ Source plan: *Free Auto Web App — Architecture Plan v0.2* (PDF on branch `clau
 - **Feasibility-first rule** in `recommendForSchedule`, with `test/schedule.test.js`. Owner chose "train if on time". Not yet shown in the UI.
 - Tests: `node --test` → 87/87 pass.
 - **Next:** add an "arrive by" time to the page and show "Take the MRT, leave by HH:MM"; then saved trips.
+
+## Metrics for the family test (defined 2026-10-19, no data yet)
+
+No analytics in the app (Decision 11), so every number comes from the trip diary. Targets are proposals to confirm after week 1, not benchmarks.
+
+**North Star:** trips per week where someone used the app, followed its answer, and had no regret afterwards (on time, no parking surprise). The plan's own line: useful decisions with minimal effort, not screen time.
+
+| Metric | Question it answers | Source | Proposed target |
+|---|---|---|---|
+| Decision time | Is it faster than thinking it through? | Diary: rough seconds from open to answer | Under 30 s |
+| Follow rate | Do people trust the answer? | Diary: followed yes/no | Over 70% |
+| Regret rate | Was the answer right? | Diary: "would choose differently now?" | Under 10% |
+| Train-on-time hit rate | Does the new arrive-by rule hold? | Diary: when the app said train, on time? | Over 90% |
+| Regular-trip share | Is a widget worth it? | Diary: regular or new trip | Over 50% means build the widget |
+| Second-week use | Does anyone come back? | Diary: used in both weeks, per person | Every person |
+
+**Diagnostics:** distance off by how many km (app vs actual); parking estimate vs what was actually paid; which reason made someone ignore the answer (rain, luggage, kids, late).
+
+**Decisions these drive:** regret over 10% means fix the estimates before native work. Regular-trip share under 50% means drop the widget and keep the app. Train-on-time hit rate under 90% means the MRT speed assumption (H4, 25 km/h) is too optimistic.
