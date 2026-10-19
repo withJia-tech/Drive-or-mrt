@@ -90,3 +90,11 @@ Source plan: *Free Auto Web App — Architecture Plan v0.2* (PDF on branch `clau
 | Skip | Learned memory/agent (D1, D3 Cohort B/C), analytics (D11) | Family feedback beats metrics at this size |
 
 **Level 3 challenge:** the widget could work perfectly and still be useless if family already know the answer for regular trips and only hesitate on new ones (which a widget can't serve). Cheapest test: a 1–2 week trip diary — each time someone hesitates, note: regular or new trip, and what tipped the decision.
+
+### Step 3 — surface (owner answered 2026-10-19)
+
+- Family phones: **mix of iPhone and Android**. Owner has a **Mac, no Apple Developer account**.
+- Bridge: **web app on home screen first** for family testing.
+- Proposed route: keep the logic in the existing JS (`calc.js` + feasibility engine), wrap it later with **Capacitor** (reuses today's web code on both platforms), and write the two widgets natively (Swift/WidgetKit on iOS, Kotlin on Android). Each widget shows the last computed answer for saved trips.
+- Rejected for now: React Native / Expo (rewrites the UI), Flutter (rewrites everything). Both still need native code for widgets.
+- Cost when native starts: Apple Developer US$99/yr for TestFlight to family (free signing works only on the owner's own iPhone, re-sign every 7 days). Android: install the app file directly for family, $0; Play Console US$25 one-off only if wanted.
