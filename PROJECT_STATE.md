@@ -48,3 +48,45 @@ The OS package's example (`DRIVE_OR_MRT_KICKOFF.md`) was written before the repo
 ## Note on deploy
 
 Pages publishes the whole repo folder, so `AGENTS.md`, `CLAUDE.md`, this file and `.claude/` will be public once merged to `main`. None contain secrets.
+
+---
+
+## Walkthrough toward native app + widget (started 2026-10-19)
+
+Source plan: *Free Auto Web App — Architecture Plan v0.2* (PDF on branch `claude/phone-location-detection-oqfi85`).
+
+### Step 1 — framing (owner answered)
+
+- **Moment:** a Singapore car owner about to leave for a place they go often needs to know at a glance whether to just take the train or whether driving/Grab is worth it, so they're on time without overpaying for parking.
+- **First users:** owner + family (private testing before any public release).
+- **"Live" means:** train/bus disruptions, traffic/drive time now, right-now context (time + location).
+- **Goal surface:** native mobile app with a home-screen widget.
+- **Trip type for widget:** owner asked to prototype and prioritise; flag contradictions.
+
+### Branch health (observed)
+
+`claude/phone-location-detection-oqfi85` head `97d2a0b` deletes `calc.js`, which `index.html` still imports, so merging it would break the live site. Previous commit `608235d`: 76/78 tests pass. Failing: `agent.test.js` "asks for destination type before treating blank parking as free" and "the interpreter exposes no memory, reward or learning output".
+
+### Step 2 — priorities (proposed, awaiting owner)
+
+**Contradictions between the goal and the plan:**
+
+1. *Live data vs "no server".* LTA DataMall (train alerts, expressway travel times, speed bands) needs an `AccountKey` header. A key in app code is readable by anyone, so live data needs a small key-holding proxy. That breaks Decision 9 ("strictly zero-dependency") unless the owner accepts one tiny proxy.
+2. *Widget vs "no memory".* A widget can't take typed input, so it needs saved trips. That looks like Decision 3's deferred memory, but it isn't: **saved trips are explicit favourites the user types once, not learned behaviour.** Proposed: allow favourites now, keep learning gated.
+3. *Native goal vs PWA plan.* Decision 8's PWA is a bridge for family testing, not the destination. Build the minimum PWA (manifest only, no heavy offline work).
+4. *"Traffic now" coverage.* LTA's estimated travel times cover expressway segments only, not door to door. Full drive time needs a routing service (Decision 5).
+5. *iOS build needs a Mac.* A widget needs Xcode (Swift/WidgetKit); this Linux sandbox can't compile or sign iOS apps. Widgets refresh roughly every 15–60 min on Apple's budget, not truly live.
+
+**Ranking:**
+
+| When | Item | Why |
+|---|---|---|
+| Now | Repair branch (restore `calc.js`, fix 2 failing tests) | Nothing else is safe to build on |
+| Now | Feasibility-first engine (D2, P1) | Its answer is what the widget will show |
+| Now | Saved trips / favourites (new) | Widget can't work without them |
+| Next | One proxy for LTA train alerts (D9 reframed) | Cheapest live signal; directly flips "take the train" |
+| Next | Native shell + widget prototype via TestFlight to family | The goal surface; blocked on Mac + Apple account |
+| Later | Open-data parking (D7), expressway traffic, routing (D5), map pin (D6) | Matter only when the feasibility gate says time is scarce |
+| Skip | Learned memory/agent (D1, D3 Cohort B/C), analytics (D11) | Family feedback beats metrics at this size |
+
+**Level 3 challenge:** the widget could work perfectly and still be useless if family already know the answer for regular trips and only hesitate on new ones (which a widget can't serve). Cheapest test: a 1–2 week trip diary — each time someone hesitates, note: regular or new trip, and what tipped the decision.
