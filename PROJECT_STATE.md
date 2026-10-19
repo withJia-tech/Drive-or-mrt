@@ -84,7 +84,7 @@ Source plan: *Free Auto Web App — Architecture Plan v0.2* (PDF on branch `clau
 | Now | Repair branch (restore `calc.js`, fix 2 failing tests) | Nothing else is safe to build on |
 | Now | Feasibility-first engine (D2, P1) | Its answer is what the widget will show |
 | Now | Saved trips / favourites (new) | Widget can't work without them |
-| Next | One proxy for LTA train alerts (D9 reframed) | Cheapest live signal; directly flips "take the train" |
+| Next | One proxy for LTA train alerts (D9 reframed — **approved 2026-10-19**) | Cheapest live signal; directly flips "take the train" |
 | Next | Native shell + widget prototype via TestFlight to family | The goal surface; blocked on Mac + Apple account |
 | Later | Open-data parking (D7), expressway traffic, routing (D5), map pin (D6) | Matter only when the feasibility gate says time is scarce |
 | Skip | Learned memory/agent (D1, D3 Cohort B/C), analytics (D11) | Family feedback beats metrics at this size |

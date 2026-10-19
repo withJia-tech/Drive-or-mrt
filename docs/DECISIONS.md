@@ -222,3 +222,11 @@ Not verified, and needing a real device: clipboard write on iOS Safari. The
 handler has an explicit failure branch with a `prompt()` escape hatch, but a
 headless browser is not evidence that it behaves on the platform where it is
 most likely to fail.
+
+---
+
+## Revision: live data via one key-holding proxy (2026-10-19)
+
+**Decided by owner: yes, one tiny proxy.** "Live" (train/bus disruptions, traffic) needs LTA DataMall, which requires an `AccountKey`. A key shipped in app code is public, so a minimal free-tier proxy holds the key and passes data through.
+
+Bounds: no accounts, no storage of user trips or location, no tracking. The app must still work with the proxy down, falling back to today's labelled estimates. This narrows the plan's Decision 9 ("strictly zero-dependency") to "one optional dependency with a fallback".
