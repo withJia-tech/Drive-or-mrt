@@ -98,3 +98,10 @@ Source plan: *Free Auto Web App — Architecture Plan v0.2* (PDF on branch `clau
 - Proposed route: keep the logic in the existing JS (`calc.js` + feasibility engine), wrap it later with **Capacitor** (reuses today's web code on both platforms), and write the two widgets natively (Swift/WidgetKit on iOS, Kotlin on Android). Each widget shows the last computed answer for saved trips.
 - Rejected for now: React Native / Expo (rewrites the UI), Flutter (rewrites everything). Both still need native code for widgets.
 - Cost when native starts: Apple Developer US$99/yr for TestFlight to family (free signing works only on the owner's own iPhone, re-sign every 7 days). Android: install the app file directly for family, $0; Play Console US$25 one-off only if wanted.
+
+### Step 5 — engineering (in progress)
+
+- **Branch repaired** (`90f321c`): location work merged in, `calc.js` restored from `608235d`, two stale agent tests updated. Phone-width run: Toa Payoh → SGH, 3 h → 8.9 km, MRT saves $9.85 (hand-checked).
+- **Feasibility-first rule** in `recommendForSchedule`, with `test/schedule.test.js`. Owner chose "train if on time". Not yet shown in the UI.
+- Tests: `node --test` → 87/87 pass.
+- **Next:** add an "arrive by" time to the page and show "Take the MRT, leave by HH:MM"; then saved trips.

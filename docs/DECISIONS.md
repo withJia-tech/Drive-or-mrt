@@ -282,3 +282,13 @@ the maths but not the platform permission UI or fix accuracy.
 **Decided by owner: yes, one tiny proxy.** "Live" (train/bus disruptions, traffic) needs LTA DataMall, which requires an `AccountKey`. A key shipped in app code is public, so a minimal free-tier proxy holds the key and passes data through.
 
 Bounds: no accounts, no storage of user trips or location, no tracking. The app must still work with the proxy down, falling back to today's labelled estimates. This narrows the plan's Decision 9 ("strictly zero-dependency") to "one optional dependency with a fallback".
+
+## Revision: feasibility-first arrive-by rule (2026-10-19)
+
+**Decided by owner: train if on time.** For an arrive-by trip, if the MRT arrives with the buffer intact, recommend it and give a leave-by time. Drive or Grab only when the train would be late, choosing the cheaper of the on-time options. If nothing is on time, recommend the shortest journey, leaving now, flagged `none_on_time`.
+
+This replaces the earlier `recommendForSchedule` rule (latest departure wins), which recommended driving even with two hours of slack. Probe, 8.9 km trip, now 12:00, arrive by 14:00: old rule → drive; new rule → MRT, leave by 13:18.
+
+Found while testing: a blank arrival time was parsed as 1 Jan 1970 (`new Date(null)`), making every mode look late. Fixed in `asDate`.
+
+Still open: leave-now / depart-at keeps the "MRT if within 15 min of the fastest" rule. Escalation reasons (rain, luggage, kids) are not wired yet. Neither the rule nor a timing input is in the UI yet.

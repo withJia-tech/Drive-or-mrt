@@ -140,7 +140,10 @@ export function oneWayJourneyTimes({ distance, walkTime }, speeds) {
 }
 
 const asDate = (value) => {
-  const date = value instanceof Date ? new Date(value) : new Date(value);
+  // new Date(null) is 1 Jan 1970, a valid date: a blank time would read as a
+  // deadline decades ago. Blank means no time given.
+  if (value === null || value === undefined || value === '') return null;
+  const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
@@ -176,14 +179,30 @@ export function recommendForSchedule({
   });
 
   const feasible = candidates.filter((candidate) => candidate.feasible);
+  const cheapest = (pool) => pool.reduce((best, candidate) =>
+    candidate.cost < best.cost ? candidate : best);
   let recommended;
-  if (timingMode === 'arrive_by' && feasible.length) {
-    // The latest safe departure protects the user's time. Within five minutes,
-    // prefer the lower-cost mode, with MRT first on a true tie.
-    const latest = Math.max(...feasible.map((candidate) => candidate.departAt.getTime()));
-    const nearLatest = feasible.filter((candidate) => latest - candidate.departAt.getTime() <= 5 * 60000);
-    recommended = nearLatest.reduce((best, candidate) =>
-      candidate.cost < best.cost ? candidate : best);
+  let reason = 'compared';
+  if (timingMode === 'arrive_by' && requested) {
+    // Feasibility first (plan v0.2, owner decision 2026-10-19): if the train
+    // is on time with the buffer, recommend it and stop. Leaving earlier is
+    // not a cost here. Drive or Grab only when the train would be late, and
+    // then the cheaper of those that are on time.
+    const mrt = candidates.find((candidate) => candidate.id === 'mrt');
+    if (mrt.feasible) {
+      recommended = mrt;
+      reason = 'train_on_time';
+    } else if (feasible.length) {
+      recommended = cheapest(feasible);
+      reason = 'train_too_late';
+    } else {
+      // Nobody makes it. Back-scheduled arrivals all equal the deadline, so
+      // compare by leaving now: the shortest journey arrives least late.
+      recommended = candidates.reduce((best, candidate) =>
+        candidate.durationMin < best.durationMin ? candidate : best);
+      recommended = { ...recommended, departAt: new Date(baseNow) };
+      reason = 'none_on_time';
+    }
   } else {
     const pool = feasible.length ? feasible : candidates;
     // For leave/depart requests, first avoid a premium when MRT is no more
@@ -199,6 +218,8 @@ export function recommendForSchedule({
     requestedAt: requested,
     bufferMin,
     recommended: recommended.id,
+    reason,
+    leaveBy: recommended.departAt,
     allFeasible: candidates.every((candidate) => candidate.feasible),
     candidates,
   };
