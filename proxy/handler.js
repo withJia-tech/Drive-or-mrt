@@ -7,7 +7,7 @@
  * Never logs coordinates or query strings. Stores nothing about users.
  */
 import {
-  parseLatLng, corsHeaders, DEFAULT_ORIGINS, summariseItinerary, summariseAlerts, oneMapDateTime,
+  parseLatLng, corsHeaders, DEFAULT_ORIGINS, summariseItinerary, summariseAlerts, oneMapDateTime, summariseSearch,
 } from './lib.js';
 
 const ONEMAP = 'https://www.onemap.gov.sg';
@@ -79,6 +79,18 @@ async function route(url, env, fetchImpl, now, cors) {
   return reply({ ...summary, source: 'onemap' }, 200, cors);
 }
 
+/** Place search. OneMap search needs no login. Never logs or echoes the query. */
+async function search(url, fetchImpl, cors) {
+  const q = (url.searchParams.get('q') || '').trim();
+  if (q.length < 2 || q.length > 80) return reply({ error: 'q must be 2 to 80 characters' }, 400, cors);
+  const params = new URLSearchParams({ searchVal: q, returnGeom: 'Y', getAddrDetails: 'Y', pageNum: '1' });
+  const res = await fetchImpl(`${ONEMAP}/api/common/elastic/search?${params}`, {
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  if (!res.ok) return reply({ error: `onemap ${res.status}` }, 502, cors);
+  return reply({ results: summariseSearch(await res.json()), source: 'onemap' }, 200, cors);
+}
+
 async function alerts(env, fetchImpl, now, cors) {
   if (!env.LTA_ACCOUNT_KEY) return reply({ error: 'not configured' }, 503, cors);
   if (alertsCache.body && now - alertsCache.at < 60_000) {
@@ -114,9 +126,10 @@ export async function handle(request, env = {}, { fetchImpl = fetch, now = Date.
   try {
     if (url.pathname.endsWith('/route')) return await route(url, env, fetchImpl, now, cors);
     if (url.pathname.endsWith('/alerts')) return await alerts(env, fetchImpl, now, cors);
+    if (url.pathname.endsWith('/search')) return await search(url, fetchImpl, cors);
     return reply({ error: 'not found' }, 404, cors);
   } catch (err) {
-    // Message only: never the URL, which carries coordinates.
+    // Message only: never the URL, which carries coordinates or what was typed.
     return reply({ error: 'upstream failed' }, 502, cors);
   }
 }

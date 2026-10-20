@@ -87,3 +87,33 @@ export function oneMapDateTime(date) {
   }).formatToParts(date).map((p) => [p.type, p.value]));
   return { date: `${parts.month}-${parts.day}-${parts.year}`, time: `${parts.hour}:${parts.minute}:${parts.second}` };
 }
+
+/** "TAN TOCK SENG HOSPITAL (BLK 2)" → "Tan Tock Seng Hospital (blk 2)". */
+const titleCase = (s) => String(s).toLowerCase().replace(/(^|[\s(/-])([a-z])/g, (m, p, c) => p + c.toUpperCase());
+const real = (v) => v !== undefined && v !== null && v !== '' && v !== 'NIL';
+
+/**
+ * OneMap place search → up to `limit` places inside Singapore.
+ * Coordinates arrive as strings; some responses spell LONGITUDE as
+ * "LONGTITUDE" (assumed from secondary sources), so accept both.
+ */
+export function summariseSearch(json, limit = 6) {
+  const results = Array.isArray(json?.results) ? json.results : [];
+  const out = [];
+  for (const r of results) {
+    if (!r || typeof r !== 'object') continue;
+    const lat = Number(r.LATITUDE);
+    const lng = Number(real(r.LONGITUDE) ? r.LONGITUDE : r.LONGTITUDE);
+    if (!parseLatLng(`${lat},${lng}`)) continue;
+    const name = real(r.BUILDING) ? r.BUILDING : r.SEARCHVAL;
+    if (!real(name)) continue;
+    out.push({
+      label: titleCase(real(r.SEARCHVAL) ? r.SEARCHVAL : name),
+      address: real(r.ADDRESS) ? titleCase(r.ADDRESS) : null,
+      postal: real(r.POSTAL) ? String(r.POSTAL) : null,
+      lat, lng,
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
+}

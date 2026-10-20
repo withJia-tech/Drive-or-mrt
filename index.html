@@ -574,6 +574,29 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 3px 8px; border-radius: var(--radius-pill);
 }
 
+/* ===== PLACE SEARCH ===== */
+/* While typing a place, the fixed bottom button would cover the suggestions. */
+body.typing-place .cta-bar { display: none; }
+.place-search { position: relative; margin-top: 10px; }
+.place-input {
+  width: 100%; min-height: 52px; padding: 12px 20px;
+  background: var(--card); color: var(--ink);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-pill);
+  font: 500 16px var(--font-body); /* 16px stops iOS zooming in */
+  scroll-margin-top: 44px; /* keep the question above it visible */
+}
+.place-results { display: grid; gap: 6px; margin-top: 8px; }
+.place-results:empty { display: none; }
+.place-option {
+  text-align: left; width: 100%; min-height: 44px;
+  background: var(--card); color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 14px;
+  padding: 10px 14px; font: 600 15px var(--font-body); cursor: pointer;
+}
+.place-option small { display: block; font-weight: 500; font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.place-option:hover, .place-option:focus-visible { background: var(--tangerine-pale); }
+.place-note { font: 500 13px var(--font-body); color: var(--ink-soft); }
+
 /* ===== I TOOK ===== */
 .took { margin: 18px 0; }
 .took-label { font: 700 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
@@ -718,16 +741,24 @@ input[type=number] { -moz-appearance: textfield; }
             <span id="geoBtnLabel">Use my current location</span>
           </button>
           <p class="field-helper geo-status" id="geoStatus" role="status" aria-live="polite"></p>
+          <div class="place-search">
+            <label class="sr-only" for="originSearch">Or type where you're starting</label>
+            <input type="search" id="originSearch" class="place-input" placeholder="Or type where you're starting" autocomplete="off" enterkeyhint="search">
+            <div class="place-results" id="originResults"></div>
+          </div>
           <div class="geo-save" id="geoSave" hidden>
             <span>Save this spot as</span>
             <button type="button" class="took-btn" data-place="home">🏠 Home</button>
             <button type="button" class="took-btn" data-place="work">🏢 Work</button>
           </div>
-          <p class="field-helper" id="geoPrivacy" hidden>Your location is sent to OneMap (Singapore Land Authority) to plan the train route. We don't store it.</p>
+          <p class="field-helper" id="geoPrivacy" hidden>Places you type, and your location when timing the train, go to OneMap (Singapore Land Authority) through our server. We don't store them.</p>
         </div>
         <div class="field geo-dest" id="geoDest">
-          <label class="field-label" for="geoLandmark">Where are you headed?</label>
-          <select id="geoLandmark"></select>
+          <label class="field-label" for="destSearch">Where are you headed?</label>
+          <div class="place-search">
+            <input type="search" id="destSearch" class="place-input" placeholder="Type a place, address or postal code" autocomplete="off" enterkeyhint="search">
+            <div class="place-results" id="destResults"></div>
+          </div>
         </div>
         <div class="field parking-clarifier" id="parkingClarifier" hidden>
           <label class="field-label" for="parkHours">About how long will you be there?</label>
@@ -755,7 +786,7 @@ input[type=number] { -moz-appearance: textfield; }
 
           <div class="disclosure" id="disc1">
             <button type="button" class="disclosure-toggle" data-disc="disc1" aria-expanded="false" aria-controls="disc1body">
-              <span>Adjust petrol, fuel economy or ERP</span>
+              <span id="carLabel">Your car: petrol and fuel economy · ERP for this trip</span>
               <span class="arrow" aria-hidden="true">▼</span>
             </button>
             <div class="disclosure-body" id="disc1body">
@@ -974,9 +1005,10 @@ import { computeAll, shareString, toNumber, round2 } from './calc.js';
 import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
-import { fetchTransitMinutes, PROXY_URL } from './transit.js';
+import { fetchTransitMinutes, searchPlaces, PROXY_URL } from './transit.js';
+import { localMatches, mergeResults } from './places.js';
 import { contextOf, directionOf, patternFor, describePattern } from './habits.js';
-import { makeTripLog, makeSavedPlaces } from './tripLog.js';
+import { makeTripLog, makeSavedPlaces, makeCarSettings } from './tripLog.js';
 
 const $ = (id) => document.getElementById(id);
 const money = (n) => `$${n.toFixed(2)}`;
@@ -987,7 +1019,9 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;'
 const { fares, parking, landmarks, source } = await loadAssumptions();
 
 const state = { context: null, rateOverridden: false, distanceFromGeo: null };
-const geoState = { origin: null };
+const geoState = { origin: null, originLabel: null };
+/* The picked destination: a saved place, a landmark, or a searched place. */
+const destState = { place: null };
 /* Real public-transport time from OneMap via our server, for the trip in `key`.
    Only used when the trip is GPS + a picked place, so the route matches. */
 const transit = { key: null, minutes: null, pending: null };
@@ -1050,6 +1084,23 @@ $('chips').replaceChildren(...CONTEXTS.map((c) => {
    numbers on screen and the numbers in /data cannot say different things. */
 $('petrol').value = fares.trip.petrolPrice.toFixed(2);
 $('fuel').value = fares.trip.fuelEconomy;
+/* Your car, set once: petrol and km/L remembered on this phone. ERP stays per trip. */
+{
+  let store = null;
+  try { store = window.localStorage; } catch { store = null; }
+  const car = makeCarSettings(store);
+  const saved = car.get();
+  if (saved) {
+    $('petrol').value = saved.petrol.toFixed(2);
+    $('fuel').value = saved.fuel;
+    $('carLabel').textContent = 'Your car (saved on this phone) · ERP for this trip';
+  }
+  ['petrol', 'fuel'].forEach((id) => $(id).addEventListener('change', () => {
+    if (car.set({ petrol: $('petrol').value, fuel: $('fuel').value })) {
+      $('carLabel').textContent = 'Your car (saved on this phone) · ERP for this trip';
+    }
+  }));
+}
 $('erp').value = fares.trip.erp;
 $('mrtFare').value = fares.alternatives.mrtFare.toFixed(2);
 $('walkTime').value = fares.alternatives.walkTime;
@@ -1097,7 +1148,7 @@ function sync() {
   const hrs = read('parkHours');
   const rate = read('parkRate');
   const dest = destById($('destType').value);
-  const placeSelected = Boolean($('geoLandmark').value);
+  const placeSelected = Boolean(destState.place);
 
   $('sum1').textContent = distance ? `${distance} km each way` : 'How far are you going?';
   $('sum2').textContent = (dest && hrs !== null)
@@ -1383,7 +1434,7 @@ function setGeoStatus(msg, kind) {
 }
 
 function updateGeoDistance() {
-  const place = findPlace($('geoLandmark').value);
+  const place = destState.place;
   if (!place || !geoState.origin) return false;
 
   const raw = estimateTripDistanceKm(geoState.origin, place, landmarks.windingFactor);
@@ -1429,30 +1480,73 @@ function allPlaces() {
     .map((k) => ({ id: `saved:${k}`, label: k === 'home' ? 'Home' : 'Work', shortLabel: k === 'home' ? 'home' : 'work', group: 'Your places', lat: saved[k].lat, lng: saved[k].lng }));
   return [...mine, ...landmarks.places];
 }
-function findPlace(id) {
-  return allPlaces().find((p) => p.id === id);
+
+/* ----------------------------------------------------------- place search
+   Typing shows on-phone matches at once (saved Home/Work, landmarks), then
+   adds OneMap results from the server. Offline or server down: on-phone only. */
+function placeSearch(inputId, resultsId, onPick) {
+  const input = $(inputId);
+  const list = $(resultsId);
+  let seq = 0;
+  let timer = null;
+  const render = (items, note) => {
+    list.replaceChildren(...items.map((place) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'place-option';
+      b.innerHTML = `${esc(place.label)}${place.address ? `<small>${esc(place.address)}</small>` : ''}`;
+      b.addEventListener('click', () => {
+        input.value = place.label;
+        list.replaceChildren();
+        document.body.classList.remove('typing-place');
+        onPick(place);
+      });
+      return b;
+    }), ...(note ? [Object.assign(document.createElement('p'), { className: 'place-note', textContent: note })] : []));
+  };
+  // Give the suggestions room: lift the box to the top, hide the bottom button.
+  input.addEventListener('focus', () => {
+    document.body.classList.add('typing-place');
+    setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+  });
+  input.addEventListener('blur', () => {
+    // Wait so a tap on a suggestion lands before the layout changes back.
+    setTimeout(() => {
+      if (!document.activeElement?.classList?.contains('place-input')) document.body.classList.remove('typing-place');
+    }, 200);
+  });
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    const mine = ++seq;
+    const local = localMatches(q, allPlaces());
+    render(local, q.length >= 3 && PROXY_URL ? 'Searching…' : '');
+    clearTimeout(timer);
+    if (q.length < 3 || !PROXY_URL) return;
+    timer = setTimeout(async () => {
+      const remote = (await searchPlaces(q)).map((r) => ({ ...r, id: `om:${r.postal || `${r.lat},${r.lng}`}`, group: 'Search' }));
+      if (mine !== seq) return; // a newer keystroke owns the list
+      const items = mergeResults(local, remote);
+      render(items, items.length ? '' : 'No match. Try a postal code or the building name.');
+    }, 300);
+  });
 }
 
-/* One <optgroup> per group, in first-seen order. Keeps the current pick. */
-function buildDestinations() {
-  const keep = $('geoLandmark').value;
-  const places = allPlaces();
-  const groups = [...new Set(places.map((p) => p.group))];
-  $('geoLandmark').replaceChildren(
-    Object.assign(document.createElement('option'), { value: '', textContent: 'Select your destination' }),
-    ...groups.map((group) => {
-      const og = document.createElement('optgroup');
-      og.label = group;
-      places
-        .filter((p) => p.group === group)
-        .forEach((p) => og.appendChild(
-          Object.assign(document.createElement('option'), { value: p.id, textContent: p.label })));
-      return og;
-    }),
-  );
-  if (keep && findPlace(keep)) $('geoLandmark').value = keep;
-}
-buildDestinations();
+placeSearch('destSearch', 'destResults', (place) => {
+  destState.place = place;
+  applyDestinationInference(place);
+  updateGeoDistance();
+  $('parkHours').focus();
+});
+
+placeSearch('originSearch', 'originResults', (place) => {
+  geoState.origin = { lat: place.lat, lng: place.lng };
+  geoState.originLabel = place.label;
+  $('geoSave').hidden = false;
+  if (!updateGeoDistance()) {
+    setGeoStatus(`Starting from ${place.label}. Now pick where you're headed.`, 'ok');
+    $('destSearch').focus();
+  }
+});
 
 $('geoBtn').addEventListener('click', () => {
   if (!('geolocation' in navigator)) {
@@ -1473,29 +1567,23 @@ $('geoBtn').addEventListener('click', () => {
       if (!updateGeoDistance()) {
         const accuracy = Number.isFinite(acc) && acc >= 0 ? ` to within about ${acc} m` : '';
         setGeoStatus(`Found you${accuracy}. Now pick where you're headed.`, 'ok');
-        $('geoLandmark').focus();
+        $('destSearch').focus();
       }
     },
     (err) => {
       $('geoBtn').disabled = false;
       $('geoBtnLabel').textContent = 'Use my current location';
       const msg = {
-        1: 'Location permission was blocked. Enter the distance manually below instead.',
-        2: "Couldn't get a fix right now. Enter the distance manually below instead.",
-        3: 'Locating timed out. Enter the distance manually below instead.',
-      }[err.code] || "Couldn't read your location. Enter the distance manually below instead.";
+        1: "Location is blocked for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Opened inside another app? Open it in Safari. Or type where you're starting below.",
+        2: "Couldn't get a fix right now. Type where you're starting below instead.",
+        3: "Locating timed out. Type where you're starting below instead.",
+      }[err.code] || "Couldn't read your location. Type where you're starting below instead.";
       setGeoStatus(msg, 'error');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
   );
 });
 
-$('geoLandmark').addEventListener('change', () => {
-  const place = findPlace($('geoLandmark').value);
-  applyDestinationInference(place);
-  updateGeoDistance();
-  if (place) $('parkHours').focus();
-});
 
 /* If the user overrides the distance by hand, the geo estimate no longer
    describes what is in the field — drop the claim rather than let it go stale. */
@@ -1507,7 +1595,7 @@ $('distance').addEventListener('input', () => {
 
 /* ------------------------------------------------ her choices (show-only) */
 function selectedPlace() {
-  return findPlace($('geoLandmark').value) || null;
+  return destState.place || null;
 }
 
 /* A new verdict is a new trip: fix its situation now, so a tap later records
@@ -1559,7 +1647,6 @@ document.querySelectorAll('#geoSave .took-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const name = btn.dataset.place;
     const ok = geoState.origin && savedPlaces.set(name, geoState.origin);
-    if (ok) buildDestinations();
     setGeoStatus(ok ? `Saved as ${name === 'home' ? 'Home' : 'Work'}, on this phone only.` : "Couldn't save on this phone.", ok ? 'ok' : 'error');
   });
 });
@@ -1577,7 +1664,7 @@ $('copyLogBtn').addEventListener('click', async () => {
 /* The trip OneMap can route: GPS origin + a picked place, distance still from GPS. */
 function currentTransitKey() {
   if (!geoState.origin || !state.distanceFromGeo) return null;
-  const place = findPlace($('geoLandmark').value);
+  const place = destState.place;
   if (!place) return null;
   return `${geoState.origin.lat.toFixed(4)},${geoState.origin.lng.toFixed(4)}>${place.id}`;
 }
@@ -1587,7 +1674,7 @@ function currentTransitKey() {
 async function refineTransitTime() {
   const key = currentTransitKey();
   if (!PROXY_URL || !key || key === transit.key || key === transit.pending) return;
-  const place = findPlace($('geoLandmark').value);
+  const place = destState.place;
   transit.pending = key;
   const result = await fetchTransitMinutes(geoState.origin, { lat: place.lat, lng: place.lng });
   if (transit.pending === key) transit.pending = null;
