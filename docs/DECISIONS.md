@@ -376,3 +376,12 @@ Owner's challenge: decisions aren't purely about cost, and Calendar travel alert
   The lens flows through `computeAll` (`driveExtra`), so the winner, verdict and share text stay consistent. Trips are always **logged at cash cost**, whatever the lens.
 - **"Your car this year"**: fixed costs since 1 January (Singapore time) plus the logged drive trips, per trip, against what the same trips would have cost by MRT or Grab.
 - **Moved "Your car" out of "Enter distance manually"**, where location users would never have found it.
+
+## QA and remediation (2026-10-20)
+
+Full report: `docs/QA_REPORT.md`. Seven defects were confirmed and fixed, each with a regression test that failed first. The reported "$5 instead of $7" was a stale result, not arithmetic. Decisions taken along the way:
+- **Results update live.** Any edit while a result is showing recalculates it. If the edit leaves something missing or invalid, the result is marked out of date instead.
+- **Inputs are refused, not coerced.** `FIELD_RULES` in `calc.js` sets plausible ranges; the page shows what to fix. `toNumber` stays as an internal safety net.
+- **A typed distance can finish without a destination.** The parking type and rate are then asked for, never assumed to be $0.
+- **The "Why this call" wording moved to `verdict.js`** (pure, tested). It follows the actual cheapest mode and the actual largest driving cost.
+- **Browser tests live in `e2e/`, not `test/`.** Node's test runner picks up everything under `test/`, and CI has no browser.

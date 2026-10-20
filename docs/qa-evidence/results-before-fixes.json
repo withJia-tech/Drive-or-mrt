@@ -1,0 +1,66 @@
+[
+  {
+    "id": "QA-D1a",
+    "title": "Edited petrol and km/L before Compare are applied (10 km, $3.50, 10 km/L → $7.00)",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 3043,
+    "note": "{\"petrol\":7}"
+  },
+  {
+    "id": "QA-D1b",
+    "title": "Editing petrol and km/L AFTER a result updates the result (no stale $5.00)",
+    "priority": "P0",
+    "status": "FAIL",
+    "ms": 2901,
+    "note": "petrol after edit {\"label\":\"Petrol · 20.0 km return\",\"val\":5} |  | 5 !== 7 | "
+  },
+  {
+    "id": "QA-D1c",
+    "title": "Clearing a required input after a result marks the result out of date",
+    "priority": "P0",
+    "status": "FAIL",
+    "ms": 2790,
+    "note": "a visible \"out of date\" note"
+  },
+  {
+    "id": "QA-D2",
+    "title": "Manual distance without a destination can be completed (parking asked, not assumed free)",
+    "priority": "P1",
+    "status": "FAIL",
+    "ms": 1356,
+    "note": "parking hours shown for a typed distance"
+  },
+  {
+    "id": "QA-D3",
+    "title": "Grab cheapest: headline and explanation agree (no \"Drive.\" / \"take the train\")",
+    "priority": "P0",
+    "status": "FAIL",
+    "ms": 2382,
+    "note": "verdict leads with Grab: Driving is cheaper by $9.00. Parking at a heartland mall is reasonable enough that petrol is most of what you're really paying. Drive. Grab actually beats both at $10.00 — door-to-door wins today."
+  },
+  {
+    "id": "QA-D4",
+    "title": "Explanation names the real cost driver (petrol, not $0.60 parking) and says \"1 hour\"",
+    "priority": "P1",
+    "status": "FAIL",
+    "ms": 2486,
+    "note": "parking blamed: MRT saves you $17.00 on this trip. Parking at a heartland mall is the killer — $0.60 for just 1 hours. Unless you need door-to-door, take the train."
+  },
+  {
+    "id": "QA-D5",
+    "title": "Fuel economy 0 km/L or petrol $0 is refused, not priced as free petrol",
+    "priority": "P0",
+    "status": "FAIL",
+    "ms": 2092,
+    "note": "Compare disabled for 0 km/L"
+  },
+  {
+    "id": "QA-D6",
+    "title": "Negative or out-of-range distance is refused with a message, not silently changed",
+    "priority": "P1",
+    "status": "FAIL",
+    "ms": 2048,
+    "note": "Compare disabled for distance -5"
+  }
+]

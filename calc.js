@@ -26,6 +26,43 @@ export function toNumber(value, fallback = 0, max = Infinity) {
   return Math.min(n, max);
 }
 
+/* ------------------------------------------------------- input checks */
+
+/**
+ * Plausible ranges for every number the page reads (QA 2026-10-20, D5/D6).
+ * toNumber() above still clamps as a last line of defence inside the
+ * engine, but the page must *refuse* a bad value with a message instead of
+ * quietly pricing 0 km/L as free petrol or 500 km as 300 km.
+ * min/max are inclusive unless minExclusive is set.
+ */
+export const FIELD_RULES = {
+  distance:   { min: 0, minExclusive: true, max: 300, msg: 'Check the distance: more than 0 and up to 300 km one way.' },
+  parkHours:  { min: 0, max: 72, msg: 'Check parking time: 0 to 72 hours.' },
+  parkRate:   { min: 0, max: 200, msg: 'Check the parking rate: $0 to $200 an hour.' },
+  petrol:     { min: 0.5, max: 10, msg: 'Check the petrol price: $0.50 to $10 a litre.' },
+  fuel:       { min: 1, max: 50, msg: 'Check fuel consumption: 1 to 50 km per litre.' },
+  erp:        { min: 0, max: 100, msg: 'Check ERP: $0 to $100.' },
+  mrtFare:    { min: 0, max: 50, msg: 'Check the MRT fare: $0 to $50 one way.' },
+  grabFare:   { min: 0, max: 500, msg: 'Check the Grab fare: $0 to $500 one way.' },
+  walkTime:   { min: 0, max: 240, msg: 'Check walking time: 0 to 240 minutes.' },
+  hourlyRate: { min: 0, max: 10000, msg: 'Check your hourly rate: $0 to $10,000.' },
+};
+
+/**
+ * Check one raw field value. Blank → { value: null, error: null } (the caller
+ * decides between "missing" and "use the default"). Anything else must be a
+ * number inside the rule's range, or it is an error with a message.
+ */
+export function checkField(id, raw) {
+  const text = raw === null || raw === undefined ? '' : String(raw).trim();
+  if (text === '') return { value: null, error: null };
+  const rule = FIELD_RULES[id];
+  const n = Number(text);
+  const ok = Number.isFinite(n) && rule
+    && (rule.minExclusive ? n > rule.min : n >= rule.min) && n <= rule.max;
+  return ok ? { value: n, error: null } : { value: null, error: rule ? rule.msg : `Check ${id}.` };
+}
+
 /* ---------------------------------------------------------------- D1-D6 */
 
 /** D1 — petrol for the round trip. `distance` is one-way km. */
@@ -394,6 +431,8 @@ export function shareString({ input, result, destinationLabel, verdict, assumpti
     `petrol ${money(result.petrol)}`,
     `parking ${money(result.parking)}`,
     result.erp > 0 ? `ERP ${money(result.erp)}` : null,
+    // QA D7: your car's wear / ownership share is in the total, so it is in the parts.
+    result.driveExtra > 0 ? `car costs ${money(result.driveExtra)}` : null,
   ].filter(Boolean).join(' + ');
 
   const lines = [

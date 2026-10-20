@@ -6,7 +6,8 @@ Use the project's existing runnable scripts and Claude Code's `/run`, `/verify` 
 
 ## This repo: verified launch and test recipe
 
-- Test: `node --test` (Node 22, no install). 188 tests: rules D1–D10, schedule, habits, server, data drift. Time-sensitive tests must pass under any `TZ` (they use Singapore time).
+- Test: `node --test` (Node 22, no install). 218 tests: rules D1–D10, schedule, habits, server, data drift. Time-sensitive tests must pass under any `TZ` (they use Singapore time).
+- Browser suite: `node e2e/run.cjs` (Playwright; starts its own server, mocks the small server, writes `e2e/out/`). Defect regressions are `QA-D*`; add one for every confirmed defect before fixing it.
 - Launch: `python3 -m http.server 8099` then open `http://127.0.0.1:8099/`. ES modules do not load over `file://`.
 - Phone check: Playwright is installed globally in the cloud sandbox; use device `iPhone 13`. Real flow: grant geolocation, click `#geoBtn`, type in `#destSearch` and click a `#destResults .place-option`, optionally fill `#arriveBy`, fill `#parkHours` (and `#parkRate` if shown), then the button "Compare my options". Use `page.clock.setFixedTime` for time-of-day behaviour.
 - Deploy: push to `main` runs tests, then uploads the **whole repo folder** to GitHub Pages. Anything committed is public on the live site.

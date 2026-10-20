@@ -628,6 +628,14 @@ body.typing-place .cta-bar { display: none; }
 .insights[hidden] { display: none; }
 .insights-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; font: 500 14px/1.5 var(--font-body); color: var(--ink); }
 
+/* ===== INVALID INPUT (QA D5/D6): the field itself shows it, not only the button ===== */
+input[aria-invalid="true"] { border-color: var(--coral-deep) !important; box-shadow: 0 0 0 3px rgba(211,46,14,.25) !important; }
+
+/* ===== OUT OF DATE (QA D1) ===== */
+.stale-note { margin: 0 0 14px; padding: 12px 14px; border: 2px solid var(--coral-deep); border-radius: 14px; background: var(--card); font: 600 14px/1.45 var(--font-body); color: var(--ink); }
+.stale-note[hidden] { display: none; }
+.result.stale .compare, .result.stale .breakdown, .result.stale .verdict, .result.stale .plan { opacity: .4; }
+
 /* ===== YOUR CAR ===== */
 .own-setup { margin-top: 18px; padding-top: 16px; border-top: 2px dashed var(--border-soft); }
 .lens { margin: 0 0 14px; }
@@ -1061,6 +1069,7 @@ body.typing-place .cta-bar { display: none; }
   <!-- RESULT -->
   <div class="result" id="result" hidden aria-labelledby="resultTitle">
     <div class="result-flag">Agent recommendation</div>
+    <p class="stale-note" id="staleNote" role="status" aria-live="polite" hidden>Your inputs changed and something is missing or out of range, so these figures are out of date. Fix the field named on the button below to update them.</p>
     <h2 class="result-title" id="resultTitle" tabindex="-1"></h2>
     <div class="plan" id="planBox" hidden>
       <p class="plan-main" id="planMain"></p>
@@ -1166,11 +1175,12 @@ body.typing-place .cta-bar { display: none; }
 </div>
 
 <script type="module">
-import { computeAll, shareString, toNumber, round2, scheduleDurations, recommendForSchedule, driveExtras, carYearSummary, ownershipPerMonth } from './calc.js';
+import { computeAll, shareString, toNumber, round2, checkField, scheduleDurations, recommendForSchedule, driveExtras, carYearSummary, ownershipPerMonth } from './calc.js';
 import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
 import { fetchTransitMinutes, searchPlaces, PROXY_URL } from './transit.js';
+import { verdictCopy } from './verdict.js';
 import { localMatches, mergeResults } from './places.js';
 import { contextOf, directionOf, patternFor, describePattern, slipMinutes, pendingOutcome, valueOfTimeBounds, describeValueOfTime, outcomeSummary, situationLabel } from './habits.js';
 import { makeTripLog, makeSavedPlaces, makeCarSettings, makeOwnership } from './tripLog.js';
@@ -1245,6 +1255,7 @@ $('chips').replaceChildren(...CONTEXTS.map((c) => {
     setContext(state.context === c.id ? null : c.id);
     sync();
     if (lastResult) paintVerdict(lastResult); // copy only — totals untouched
+    afterEdit(); // purpose also feeds the trip's situation
   });
   return b;
 }));
@@ -1290,10 +1301,16 @@ const LIMITS = {
 };
 
 /** Blank stays null so validation can tell "nothing entered" from "entered 0". */
+/* Bad values are refused with a message, never silently changed (QA D5/D6).
+   fieldErrors holds the current problem per field; sync() shows the first. */
+const fieldErrors = {};
 function read(id, fallback = null) {
-  const raw = $(id).value.trim();
-  if (raw === '') return fallback;
-  return round2(toNumber(raw, fallback ?? 0, LIMITS[id]));
+  const { value, error } = checkField(id, $(id).value);
+  fieldErrors[id] = error;
+  $(id).setAttribute('aria-invalid', String(Boolean(error)));
+  if (error) return null;
+  if (value === null) return fallback;
+  return round2(toNumber(value, fallback ?? 0, LIMITS[id]));
 }
 
 function currentInput() {
@@ -1344,49 +1361,38 @@ function sync() {
         : `Typical for a ${dest.shortLabel}. Override if you know the exact rate.`;
   }
 
-  const ready = placeSelected && distance !== null && hrs !== null && dest && rate !== null;
+  // Every field is checked, including ones with defaults (QA D5/D6).
+  ['petrol', 'fuel', 'erp', 'walkTime', 'hourlyRate', 'mrtFare', 'grabFare'].forEach((id) => read(id));
+  const firstError = Object.values(fieldErrors).find(Boolean) || null;
+
+  // A typed distance can finish without picking a place (QA D2): parking time,
+  // type and rate are then asked for, never assumed to be $0.
+  const manual = !placeSelected && distance !== null;
+  if (placeSelected || distance !== null) $('parkingClarifier').hidden = false;
+  if (manual && $('card2').hidden) { $('card2').hidden = false; expand('card2'); }
+
+  const ready = !firstError && (placeSelected || manual) && distance !== null && hrs !== null && dest && rate !== null;
   $('calcBtn').disabled = !ready;
   $('calcLabel').textContent = ready ? 'Compare my options'
-    : !placeSelected ? 'Choose your destination'
+    : firstError ? firstError
+    : !placeSelected && distance === null ? 'Choose your destination'
     : distance === null ? 'Use location or enter distance'
     : hrs === null ? 'How long will you be there?'
+    : manual && !dest ? 'Choose a parking type or rate'
     : !dest || rate === null ? 'Review parking assumption'
     : 'Compare my options';
+  return ready;
 
   ['distance','parkHours','mrtFare','grabFare','parkRate'].forEach((id) =>
     $(id).classList.toggle('filled', $(id).value.trim() !== ''));
 }
 
 /* --------------------------------------------------------------- verdicts */
-function verdictCopy(r, meta) {
-  const gap = money(r.delta);
-  const dest = esc(meta.destLabel);
-  // "at a hospital", but "at this destination" (not "at a this destination").
-  const atDest = meta.destLabel === 'this destination' ? 'this destination' : `a ${dest}`;
-  if (r.band === 'mrt-wins') {
-    return {
-      html: `MRT saves you <strong>${gap}</strong> on this trip. Parking at ${atDest} is the killer — ${money(r.parking)} for just ${meta.parkHours} hours. Unless you need door-to-door, take the train.`,
-      share: `MRT saves ${gap} vs driving. Door-to-door — your call.`,
-    };
-  }
-  if (r.band === 'drive-wins') {
-    return {
-      html: `Driving is cheaper by <strong>${gap}</strong>. Parking at ${atDest} is reasonable enough that petrol is most of what you're really paying. Drive.`,
-      share: `Driving wins by ${gap}. Parking isn't the killer here.`,
-    };
-  }
-  return {
-    html: `It's within <strong>${gap}</strong> either way — this is a comfort call, not a cost one.`,
-    share: `Within ${gap} either way — comfort call.`,
-  };
-}
+/* Wording lives in verdict.js (pure, unit-tested). */
 
 function paintVerdict(r) {
   const v = verdictCopy(r, lastMeta);
-  let html = v.html;
-  if (r.winner === 'grab') {
-    html += ` Grab actually beats both at ${money(r.grab)} — door-to-door wins today.`;
-  }
+  const html = v.html;
   $('verdictText').innerHTML = html;
 
   const ctx = CONTEXTS.find((c) => c.id === state.context);
@@ -1426,6 +1432,8 @@ function paintAssumptions(r, input) {
 
 /* -------------------------------------------------------------- calculate */
 function calculate({ quiet = false } = {}) {
+  $('staleNote').hidden = true;
+  $('result').classList.remove('stale');
   const input = currentInput();
   if (!input.distance) return;
 
@@ -1590,8 +1598,25 @@ $('parkRate').addEventListener('input', () => {
   sync();
 });
 
-['distance','parkHours','mrtFare','grabFare','petrol','fuel','erp','walkTime','hourlyRate']
-  .forEach((id) => $(id).addEventListener('input', sync));
+/* Live update (QA D1): with a result on screen, any edit recalculates it.
+   The reported "$5 instead of $7" was an edit made after Compare: the old
+   result stayed up, unchanged and unmarked. If an edit leaves something
+   missing or invalid, the result is dimmed and marked out of date instead. */
+let recalcTimer = null;
+function afterEdit() {
+  sync();
+  if ($('result').hidden) return;
+  clearTimeout(recalcTimer);
+  recalcTimer = setTimeout(() => {
+    const ok = sync();
+    $('staleNote').hidden = ok;
+    $('result').classList.toggle('stale', !ok);
+    if (ok) calculate({ quiet: true });
+  }, 150);
+}
+['distance', 'parkHours', 'parkRate', 'mrtFare', 'grabFare', 'petrol', 'fuel', 'erp', 'walkTime', 'hourlyRate', 'arriveBy']
+  .forEach((id) => ['input', 'change'].forEach((ev) => $(id).addEventListener(ev, afterEdit)));
+$('destType').addEventListener('change', afterEdit);
 
 /* ------------------------------------------------------ use my location (H9)
    The one figure the user has to know is the distance. The phone already
@@ -1716,6 +1741,7 @@ placeSearch('destSearch', 'destResults', (place) => {
   destState.place = place;
   applyDestinationInference(place);
   updateGeoDistance();
+  afterEdit();
   $('parkHours').focus();
 });
 
