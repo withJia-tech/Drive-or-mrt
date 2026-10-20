@@ -114,3 +114,15 @@ describe('permanent agent boundaries', () => {
     }
   });
 });
+
+describe('parking type for searched places (2026-10-20)', () => {
+  test('hospital names: public by default, private for known private hospitals', () => {
+    assert.equal(destinationTypeForPlace({ group: 'Search', label: 'Tan Tock Seng Hospital' }), 'public-hosp');
+    assert.equal(destinationTypeForPlace({ group: 'Search', label: 'Mount Alvernia Hospital' }), 'private-hosp');
+    assert.equal(destinationTypeForPlace({ group: 'Search', label: 'Blk 3', address: '3 Mount Elizabeth Hospital Singapore' }), 'private-hosp');
+  });
+  test('anything else is "other", so the rate is asked', () => {
+    assert.equal(destinationTypeForPlace({ group: 'Search', label: 'Blk 123 Toa Payoh Lorong 1' }), 'other');
+    assert.equal(destinationTypeForPlace({ group: 'Search', label: 'Some Mall' }), 'other');
+  });
+});

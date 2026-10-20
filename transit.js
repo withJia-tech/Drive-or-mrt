@@ -6,8 +6,8 @@
  * to the family's own time or the labelled estimate.
  */
 
-/** Set once the server is deployed, e.g. 'https://drive-or-mrt-proxy.vercel.app'. Empty = feature off. */
-export const PROXY_URL = '';
+/** The small server (same Vercel project as the app). Empty = all network features off. */
+export const PROXY_URL = 'https://driveormrt.vercel.app';
 
 const fmt = ({ lat, lng }) => `${Number(lat).toFixed(5)},${Number(lng).toFixed(5)}`;
 
@@ -32,5 +32,28 @@ export async function fetchTransitMinutes(from, to, {
     return Number.isFinite(body?.minutes) && body.minutes > 0 ? body : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Search places by name, address or postal code through the server (OneMap).
+ * Never throws: any failure gives [] and the on-phone matches still show.
+ */
+export async function searchPlaces(query, {
+  baseUrl = PROXY_URL, fetchImpl = globalThis.fetch, timeoutMs = 4000,
+} = {}) {
+  const q = String(query || '').trim();
+  if (!baseUrl || q.length < 2 || q.length > 80 || typeof fetchImpl !== 'function') return [];
+  try {
+    const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/api/search?${new URLSearchParams({ q })}`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    return Array.isArray(body?.results)
+      ? body.results.filter((r) => r && typeof r.label === 'string' && Number.isFinite(r.lat) && Number.isFinite(r.lng))
+      : [];
+  } catch {
+    return [];
   }
 }

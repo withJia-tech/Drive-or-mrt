@@ -335,3 +335,13 @@ Owner: SMRT times are predictable; drive times are good; Grab varies with the wa
 **Tension, kept visible:** the owner wants value of time to change the verdict, and also chose show-only for now. Both hold: show now, test changing the verdict later.
 
 **Also fixed:** "Parking at a this destination" wording; saved Home / Work can be picked as destinations (parking rate is asked, never guessed).
+
+## Revision: type any place; clearer location help; your car set once (2026-10-20)
+
+Owner, after trying it on an iPhone:
+- **Location "blocked".** This isn't caused by the owner's network settings. A web page can't borrow Google Maps' or Apple Maps' location; it gets the phone's own GPS only if the browser is allowed to ask. The blocked message now gives the iPhone fix (Settings → Privacy & Security → Location Services → Safari Websites → While Using the App; open in Safari, not inside another app). There's also a new fallback: **type where you're starting.**
+- **Destinations are typed, not picked.** Saved Home/Work and the built-in landmarks match instantly on the phone (each typed word must start a word). OneMap place search, through `/api/search` on our server (no login needed, per secondary sources), adds anything else. Offline or server down: on-phone matches only. Searched hospitals get hospital parking (private for known private hospitals); everything else asks for the rate instead of guessing.
+- **Your car, set once.** Petrol price and km/L are remembered on the phone after the first edit. ERP is not remembered: it depends on route and time.
+- **Server switched on.** `PROXY_URL = https://driveormrt.vercel.app`. Search works now. `/api/route` answers "not configured" until the OneMap login is in Vercel, and the app falls back silently. The privacy line now says what is sent and when.
+
+Not verified: real OneMap search responses (this sandbox can't reach onemap.gov.sg), and a real iPhone.

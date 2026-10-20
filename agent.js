@@ -71,6 +71,13 @@ export function destinationTypeForPlace(place) {
   if (place.group === 'Hospitals') return 'public-hosp';
   if (['ion', 'raffles-city', 'marina-bay-sands'].includes(place.id)) return 'cbd';
   if (place.group === 'Malls & shopping') return 'heartland';
+  // Searched places (any name): only hospitals are inferred from the name.
+  // Everything else is "other", so the parking rate is asked, never guessed.
+  const name = `${place.label || ''} ${place.address || ''}`;
+  if (/hospital/i.test(name)) {
+    return /mount elizabeth|gleneagles|mount alvernia|raffles hospital|parkway east|farrer park hospital|thomson medical/i.test(name)
+      ? 'private-hosp' : 'public-hosp';
+  }
   return 'other';
 }
 

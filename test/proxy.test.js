@@ -139,3 +139,62 @@ describe('handler', () => {
     assert.equal(f.calls.filter((c) => c.url.includes('TrainServiceAlerts')).length, 2);
   });
 });
+
+/* ---------------------------------------------- place search (2026-10-20) */
+import { summariseSearch } from '../proxy/lib.js';
+
+// ASSUMED shape (secondary sources): strings, NIL for blanks, and OneMap's own
+// "LONGTITUDE" misspelling on some responses.
+const ONEMAP_SEARCH_ASSUMED = {
+  found: 3, totalNumPages: 1, pageNum: 1,
+  results: [
+    { SEARCHVAL: 'TAN TOCK SENG HOSPITAL', BUILDING: 'TAN TOCK SENG HOSPITAL', ADDRESS: '11 JALAN TAN TOCK SENG TAN TOCK SENG HOSPITAL SINGAPORE 308433', POSTAL: '308433', LATITUDE: '1.32146', LONGITUDE: '103.84604' },
+    { SEARCHVAL: 'TAN TOCK SENG HOSPITAL (BLK 2)', BUILDING: 'NIL', ADDRESS: '11 JALAN TAN TOCK SENG SINGAPORE 308433', POSTAL: '308433', LATITUDE: '1.32100', LONGTITUDE: '103.84650' },
+    { SEARCHVAL: 'SOMEWHERE ABROAD', BUILDING: 'NIL', ADDRESS: 'NOT IN SG', POSTAL: 'NIL', LATITUDE: '51.5', LONGITUDE: '-0.12' },
+  ],
+};
+
+describe('place search', () => {
+  test('summary: label, address, coordinates as numbers; misspelt key handled; outside SG dropped', () => {
+    const s = summariseSearch(ONEMAP_SEARCH_ASSUMED);
+    assert.equal(s.length, 2);
+    assert.deepEqual(s[0], { label: 'Tan Tock Seng Hospital', address: '11 Jalan Tan Tock Seng Tan Tock Seng Hospital Singapore 308433', postal: '308433', lat: 1.32146, lng: 103.84604 });
+    assert.equal(s[1].lng, 103.8465); // from LONGTITUDE
+    assert.equal(s[1].label, 'Tan Tock Seng Hospital (Blk 2)');
+  });
+
+  test('empty or junk response: empty list', () => {
+    assert.deepEqual(summariseSearch({}), []);
+    assert.deepEqual(summariseSearch({ results: [null, { LATITUDE: 'x' }] }), []);
+  });
+
+  test('search needs no secrets and passes the query through', async () => {
+    let seen;
+    const f = async (url) => { seen = new URL(String(url)); return Response.json(ONEMAP_SEARCH_ASSUMED); };
+    const res = await handle(req('/api/search?q=tan%20tock%20seng'), {}, { fetchImpl: f, now: NOW });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.results.length, 2);
+    assert.equal(body.source, 'onemap');
+    assert.equal(seen.pathname, '/api/common/elastic/search');
+    assert.equal(seen.searchParams.get('searchVal'), 'tan tock seng');
+    assert.equal(seen.searchParams.get('returnGeom'), 'Y');
+  });
+
+  test('too short, too long, or missing query: 400 before any network call', async () => {
+    let calls = 0;
+    const f = async () => { calls += 1; return Response.json({}); };
+    for (const q of ['', 'a', 'x'.repeat(81)]) {
+      const res = await handle(req(`/api/search?q=${encodeURIComponent(q)}`), {}, { fetchImpl: f, now: NOW });
+      assert.equal(res.status, 400, JSON.stringify(q));
+    }
+    assert.equal(calls, 0);
+  });
+
+  test('upstream failure never echoes what was typed', async () => {
+    const boom = async () => { throw new Error('failed for my secret clinic'); };
+    const res = await handle(req('/api/search?q=my%20secret%20clinic'), {}, { fetchImpl: boom, now: NOW });
+    assert.equal(res.status, 502);
+    assert.doesNotMatch(await res.text(), /secret clinic/);
+  });
+});

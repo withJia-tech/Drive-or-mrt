@@ -70,3 +70,25 @@ export function makeSavedPlaces(storage = globalThis.localStorage, key = 'dom.pl
     },
   };
 }
+
+/** Your car: petrol price and fuel economy, set once. ERP is per trip, never saved. */
+export function makeCarSettings(storage = globalThis.localStorage, key = 'dom.car.v1') {
+  const ok = (n, min, max) => Number.isFinite(n) && n >= min && n <= max;
+  return {
+    get() {
+      try {
+        const c = JSON.parse(storage?.getItem(key) || 'null');
+        if (!c) return null;
+        const petrol = Number(c.petrol);
+        const fuel = Number(c.fuel);
+        return ok(petrol, 0.5, 10) && ok(fuel, 1, 50) ? { petrol, fuel } : null;
+      } catch { return null; }
+    },
+    set({ petrol, fuel }) {
+      const p = Number(petrol);
+      const f = Number(fuel);
+      if (!storage || !ok(p, 0.5, 10) || !ok(f, 1, 50)) return false;
+      try { storage.setItem(key, JSON.stringify({ petrol: p, fuel: f })); return true; } catch { return false; }
+    },
+  };
+}

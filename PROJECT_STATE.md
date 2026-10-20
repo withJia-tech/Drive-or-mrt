@@ -161,3 +161,14 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
 - Local smoke test of the entry files: `/api/alerts` and `/api/route` return 503 "not configured" without keys; a foreign origin gets 403.
 - GitHub Pages was never enabled (configure-pages fails with "Resource not accessible by integration"). It isn't needed now; the workflow will keep failing until Pages is enabled or the workflow is removed.
 - Still open: PR #2 merge; OneMap and LTA keys in Vercel; `PROXY_URL` stays empty until the keys exist.
+
+### Type-a-place + car settings (2026-10-20, branch restarted from merged `main` @ 2c5679e)
+
+- Built: destination and start search (`places.js`, `searchPlaces` in `transit.js`, `/api/search` in `proxy/`); blocked-location help; "Your car" saved on the phone; server switched on.
+- Tests: `node --test` → 150/150.
+- Phone-width Playwright run with the server mocked:
+  - Location refused → help text shown.
+  - Typed "toa payoh" → Toa Payoh Central; typed "tan tock" → TTSH (on phone) plus a OneMap result. Distance 2.5 km (hand: 1.83 × 1.35). Petrol $1.25 and parking $6.00, both hand-checked.
+  - Server down → "vivo" still finds VivoCity; nonsense → "No match".
+  - Car petrol 2.66 survives a reload; ERP stays 0.
+- Not verified: live OneMap search (sandbox blocked) and a real iPhone.
