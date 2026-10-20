@@ -85,3 +85,50 @@ export function describePattern(pattern, context, bands) {
   if (has('purpose') && context.purpose) parts.push(PURPOSE_LABELS[context.purpose] || context.purpose);
   return `${parts.join(', ')}: you ${VERB[pattern.mode]} ${pattern.count} of the last ${pattern.of} times.`;
 }
+
+/* ------------------------------------------------- punctuality (step 1) */
+
+const median = (xs) => {
+  const a = [...xs].sort((x, y) => x - y);
+  const m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+};
+
+/**
+ * Her usual slip: minutes between the suggested leave-by and when she
+ * actually tapped "leaving now". Median of the last `window` trips in the
+ * most specific situation with at least `min` of them (same back-off as
+ * patternFor). The buffer it adds is 0..30 minutes; leaving early adds
+ * nothing but is reported in `median`.
+ */
+export function slipMinutes(log, context, { min = 3, window = 7 } = {}) {
+  const valid = (Array.isArray(log) ? log : [])
+    .filter((e) => e && e.context && e.leftAt && e.shown && e.shown.suggestedLeaveBy
+      && Number.isFinite(Date.parse(e.leftAt)) && Number.isFinite(Date.parse(e.shown.suggestedLeaveBy)))
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  for (const level of LEVELS) {
+    const same = valid.filter((e) => level.every((k) => (e.context[k] ?? null) === (context[k] ?? null)));
+    if (same.length < min) continue;
+    const recent = same.slice(-window);
+    const deltas = recent.map((e) => (Date.parse(e.leftAt) - Date.parse(e.shown.suggestedLeaveBy)) / 60000);
+    const med = Math.round(median(deltas));
+    return { minutes: Math.min(30, Math.max(0, med)), median: med, of: recent.length, level };
+  }
+  return null;
+}
+
+/**
+ * The one trip to ask about when she next opens the app: her latest chosen
+ * trip, 20 min to 36 h old, not asked before. Arrival is only asked when the
+ * trip had an arrive-by time. Older unasked trips are never chased.
+ */
+export function pendingOutcome(log, now = new Date(), { minAgeMin = 20, maxAgeHours = 36 } = {}) {
+  const chosen = (Array.isArray(log) ? log : [])
+    .filter((e) => e && MODES.includes(e.chose) && Number.isFinite(Date.parse(e.at)))
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  const last = chosen[chosen.length - 1];
+  if (!last || last.outcomeAsked) return null;
+  const ageMin = (now.getTime() - Date.parse(last.at)) / 60000;
+  if (ageMin < minAgeMin || ageMin > maxAgeHours * 60) return null;
+  return { id: last.id, chose: last.chose, at: last.at, askArrival: !!last.shown?.deadline };
+}

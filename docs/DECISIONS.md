@@ -345,3 +345,13 @@ Owner, after trying it on an iPhone:
 - **Server switched on.** `PROXY_URL = https://driveormrt.vercel.app`. Search works now. `/api/route` answers "not configured" until the OneMap login is in Vercel, and the app falls back silently. The privacy line now says what is sent and when.
 
 Not verified: real OneMap search responses (this sandbox can't reach onemap.gov.sg), and a real iPhone.
+
+## Revision: learn why she chooses, step 1 — punctuality (2026-10-20)
+
+Owner's challenge: decisions aren't purely about cost, and Calendar travel alerts don't make anyone punctual. So we measure outcomes, not compliance.
+- **Arrive-by on screen.** With a time set, the headline uses the feasibility-first rule: "Take the MRT · leave by 13:34". The cost cards stay below. A time that has passed is said so, never read as tomorrow.
+- **"I'm leaving now"** records when she actually left, against the suggested leave-by.
+- **Personal slip:** the median minutes late over the last trips in the same situation (at least 3; capped 0–30). It's added to the 10-minute buffer and said in plain words. Leaving early adds nothing.
+- **Next-open card** about her last chosen trip: "Arrived early / on time / late" (only if it had an arrive-by time) and "Same choice again?". Asked once, skippable, older trips never chased.
+- Trip records are now v2: one record per trip, filled in over time (`upsert`), whitelisted, no coordinates. v1 records still read.
+- Next: step 2 (reasons + value-of-time insights), step 3 (car ownership, Cash ↔ All-in).

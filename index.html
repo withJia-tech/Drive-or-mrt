@@ -597,6 +597,29 @@ body.typing-place .cta-bar { display: none; }
 .place-option:hover, .place-option:focus-visible { background: var(--tangerine-pale); }
 .place-note { font: 500 13px var(--font-body); color: var(--ink-soft); }
 
+/* ===== ARRIVE BY / PLAN / OUTCOME ===== */
+.optional-tag { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+.arrive-input { margin-top: 0; }
+.plan {
+  margin: 4px 0 18px; padding: 16px 18px;
+  background: var(--card); border: 2.5px solid var(--ink); border-radius: var(--radius-panel);
+}
+.plan[hidden] { display: none; }
+.plan-main { font: 700 18px/1.35 var(--font-body); color: var(--ink); }
+.plan-why { margin-top: 6px; font: 500 13px/1.5 var(--font-body); color: var(--ink-soft); }
+.leaving-btn { margin-top: 12px; width: 100%; }
+.outcome {
+  margin: 0 0 18px; padding: 16px 18px;
+  background: var(--card); border: 2.5px solid var(--ink); border-radius: var(--radius-panel);
+  box-shadow: var(--hard);
+}
+.outcome[hidden] { display: none; }
+.outcome-title { font: 700 15px var(--font-body); margin-bottom: 10px; }
+.outcome-row { margin-top: 10px; }
+.outcome-row[hidden] { display: none; }
+.outcome-q { display: block; font: 700 12px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.outcome-skip { margin-top: 12px; background: none; border: none; font: 600 14px var(--font-body); color: var(--ink-soft); text-decoration: underline; cursor: pointer; min-height: 44px; }
+
 /* ===== I TOOK ===== */
 .took { margin: 18px 0; }
 .took-label { font: 700 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
@@ -716,6 +739,26 @@ body.typing-place .cta-bar { display: none; }
     <p class="deck">One trip. Three ways. See what each really costs.</p>
   </header>
 
+  <div class="outcome" id="outcomeCard" hidden>
+    <p class="outcome-title" id="outcomeTitle"></p>
+    <div class="outcome-row" id="outcomeArrivalRow">
+      <span class="outcome-q">Arrived</span>
+      <div class="took-buttons" role="group" aria-label="When you arrived">
+        <button type="button" class="took-btn" data-arrival="early" aria-pressed="false">Early</button>
+        <button type="button" class="took-btn" data-arrival="on-time" aria-pressed="false">On time</button>
+        <button type="button" class="took-btn" data-arrival="late" aria-pressed="false">Late</button>
+      </div>
+    </div>
+    <div class="outcome-row">
+      <span class="outcome-q">Same choice again?</span>
+      <div class="took-buttons" role="group" aria-label="Same choice again">
+        <button type="button" class="took-btn" data-again="yes" aria-pressed="false">Yes</button>
+        <button type="button" class="took-btn" data-again="no" aria-pressed="false">No</button>
+      </div>
+    </div>
+    <button type="button" class="outcome-skip" id="outcomeSkip">Skip</button>
+  </div>
+
   <div class="progress" role="img" aria-label="Progress through the required fields">
     <div class="progress-seg" id="p1"></div>
     <div class="progress-seg" id="p2"></div>
@@ -759,6 +802,11 @@ body.typing-place .cta-bar { display: none; }
             <input type="search" id="destSearch" class="place-input" placeholder="Type a place, address or postal code" autocomplete="off" enterkeyhint="search">
             <div class="place-results" id="destResults"></div>
           </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="arriveBy">Arrive by <span class="optional-tag">optional</span></label>
+          <input type="time" id="arriveBy" class="place-input arrive-input">
+          <p class="field-helper" id="arriveHelp">Set it and we'll tell you when to leave.</p>
         </div>
         <div class="field parking-clarifier" id="parkingClarifier" hidden>
           <label class="field-label" for="parkHours">About how long will you be there?</label>
@@ -930,6 +978,12 @@ body.typing-place .cta-bar { display: none; }
   <div class="result" id="result" hidden aria-labelledby="resultTitle">
     <div class="result-flag">Agent recommendation</div>
     <h2 class="result-title" id="resultTitle" tabindex="-1"></h2>
+    <div class="plan" id="planBox" hidden>
+      <p class="plan-main" id="planMain"></p>
+      <p class="plan-why" id="planWhy"></p>
+      <button type="button" class="took-btn leaving-btn" id="leavingBtn">🚶 I'm leaving now</button>
+      <p class="took-status" id="leavingStatus" role="status" aria-live="polite"></p>
+    </div>
     <div class="compare" id="compare"></div>
     <div class="breakdown" id="driveBreakdown"></div>
     <div class="breakdown" id="mrtBreakdown"></div>
@@ -1001,13 +1055,13 @@ body.typing-place .cta-bar { display: none; }
 </div>
 
 <script type="module">
-import { computeAll, shareString, toNumber, round2 } from './calc.js';
+import { computeAll, shareString, toNumber, round2, scheduleDurations, recommendForSchedule } from './calc.js';
 import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
 import { fetchTransitMinutes, searchPlaces, PROXY_URL } from './transit.js';
 import { localMatches, mergeResults } from './places.js';
-import { contextOf, directionOf, patternFor, describePattern } from './habits.js';
+import { contextOf, directionOf, patternFor, describePattern, slipMinutes, pendingOutcome } from './habits.js';
 import { makeTripLog, makeSavedPlaces, makeCarSettings } from './tripLog.js';
 
 const $ = (id) => document.getElementById(id);
@@ -1322,6 +1376,7 @@ function calculate({ quiet = false } = {}) {
   $('resultTitle').innerHTML = `<span class="accent">${accent}</span><br>${tail}`;
 
   if (!quiet) startTrip(r);
+  paintPlan(r, input);
   paintPattern(r);
 
   // A quiet redraw (a real train time arriving later) must not jump the page.
@@ -1614,13 +1669,132 @@ function startTrip(r) {
   };
   document.querySelectorAll('#tookRow .took-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
   $('tookStatus').textContent = '';
+  $('leavingStatus').textContent = '';
 }
+
+/* ------------------------------------------- arrive-by plan (step 1)
+   Feasibility first: with an arrive-by time, the headline says what to take
+   and when to leave. Her own usual slip is added to the buffer, and said. */
+const MODE_NAME = { mrt: 'MRT', drive: 'Drive', grab: 'Grab' };
+const PLAN_TITLES = { drive: ['Drive', 'gets you there.'], mrt: ['MRT', 'makes it.'], grab: ['Grab', 'it is.'] };
+const hhmm = (d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+function arriveByDate(now) {
+  const v = $('arriveBy').value;
+  if (!v) return null;
+  const [h, m] = v.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  const d = new Date(now);
+  d.setHours(h, m, 0, 0);
+  return d; // today only: a time that has passed is said so, never read as tomorrow
+}
+
+function paintPlan(r, input) {
+  if (!currentTrip) return;
+  const now = new Date();
+  const routed = transit.key && transit.key === currentTransitKey() && transit.minutes ? transit.minutes : null;
+  const d = scheduleDurations(input, fares.speeds, { transitMinutes: routed });
+  const round = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v)]));
+  currentTrip.recommended = r.winner;
+  currentTrip.shown = {
+    recommended: r.winner, variant: 'show-only',
+    costs: { mrt: r.mrt, drive: r.drive, grab: r.grab },
+    minutes: round(d.durations), suggestedLeaveBy: null, deadline: null,
+  };
+
+  const deadline = arriveByDate(now);
+  $('planBox').hidden = true;
+  if (!deadline) { $('arriveHelp').textContent = "Set it and we'll tell you when to leave."; return; }
+  if (deadline <= now) { $('arriveHelp').textContent = 'That time has passed. Pick a later time, or clear it.'; return; }
+  $('arriveHelp').textContent = '';
+
+  const slip = slipMinutes(tripLog.all(), currentTrip.context);
+  const buffer = 10 + (slip ? slip.minutes : 0);
+  const plan = recommendForSchedule({
+    timingMode: 'arrive_by', requestedAt: deadline, now, bufferMin: buffer,
+    costs: { mrt: r.mrt, drive: r.drive, grab: r.grab },
+    durations: d.durations, worstDurations: d.worst,
+  });
+  const mode = plan.recommended;
+  const leave = hhmm(plan.leaveBy);
+  const main = {
+    train_on_time: `Take the MRT · leave by ${leave}`,
+    train_too_late: `The train won't make it. ${MODE_NAME[mode]} · leave by ${leave}`,
+    grab_gamble: 'Only a Grab might make it, if one comes quickly. Leave now.',
+    gamble: `Only ${MODE_NAME[mode]} might make it. Leave now.`,
+    none_on_time: `Nothing gets you there by ${hhmm(deadline)}. ${MODE_NAME[mode]} is fastest. Leave now.`,
+  }[plan.reason] || `${MODE_NAME[mode]} · leave by ${leave}`;
+  const why = [`Arrive by ${hhmm(deadline)}, with a buffer of ${buffer} min`];
+  if (slip && slip.minutes > 0) why.push(`including ${slip.minutes} min because you usually leave about that late (last ${slip.of} trips)`);
+  if (slip && slip.median < 0) why.push(`you usually leave ${-slip.median} min early, so no extra time added`);
+  if (plan.gambles.includes('grab') && mode !== 'grab') why.push('Grab only makes it if the car comes quickly');
+  why.push(`MRT time: ${d.sources.mrt === 'onemap' ? 'OneMap' : 'estimate'}`);
+
+  currentTrip.recommended = mode;
+  currentTrip.shown.recommended = mode;
+  currentTrip.shown.suggestedLeaveBy = plan.leaveBy.toISOString();
+  currentTrip.shown.deadline = deadline.toISOString();
+  $('planMain').textContent = main;
+  $('planWhy').textContent = `${why.join('; ')}.`;
+  const [accent, tail] = PLAN_TITLES[mode];
+  $('resultTitle').innerHTML = `<span class="accent">${accent}</span><br>${tail}`;
+  $('planBox').hidden = false;
+}
+
+$('leavingBtn').addEventListener('click', () => {
+  if (!currentTrip) return;
+  const now = new Date();
+  const id = tripLog.upsert({
+    id: currentTrip.id, at: currentTrip.at, context: currentTrip.context,
+    shown: currentTrip.shown, leftAt: now.toISOString(),
+  });
+  if (!id) { $('leavingStatus').textContent = "Couldn't save on this phone (storage is blocked)."; return; }
+  currentTrip.id = id;
+  const lb = currentTrip.shown?.suggestedLeaveBy ? Date.parse(currentTrip.shown.suggestedLeaveBy) : null;
+  const diff = lb ? Math.round((now.getTime() - lb) / 60000) : null;
+  $('leavingStatus').textContent = diff === null ? 'Noted. Safe trip.'
+    : diff > 1 ? `Noted: ${diff} min after the suggested time. Safe trip.`
+      : diff < -1 ? `Noted: ${-diff} min early. Safe trip.` : 'Noted: right on time. Safe trip.';
+});
+
+/* Next time she opens the app: one card about her last trip. Skippable, never repeated. */
+(function showOutcomeCard() {
+  const p = pendingOutcome(tripLog.all(), new Date());
+  if (!p) return;
+  const when = new Date(p.at);
+  $('outcomeTitle').textContent = `Your last trip: ${MODE_NAME[p.chose]}, ${when.toLocaleDateString('en-GB', { weekday: 'short' })} ${hhmm(when)}`;
+  $('outcomeArrivalRow').hidden = !p.askArrival;
+  const answered = { arrival: !p.askArrival, again: false };
+  const done = () => {
+    if (!(answered.arrival && answered.again)) return;
+    tripLog.upsert({ id: p.id, outcomeAsked: true });
+    $('outcomeTitle').textContent = 'Thanks, noted.';
+    setTimeout(() => { $('outcomeCard').hidden = true; }, 1200);
+  };
+  const press = (sel, btn) => document.querySelectorAll(sel).forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+  document.querySelectorAll('#outcomeCard [data-arrival]').forEach((b) => b.addEventListener('click', () => {
+    tripLog.upsert({ id: p.id, arrival: b.dataset.arrival });
+    press('#outcomeCard [data-arrival]', b);
+    answered.arrival = true; done();
+  }));
+  document.querySelectorAll('#outcomeCard [data-again]').forEach((b) => b.addEventListener('click', () => {
+    tripLog.upsert({ id: p.id, again: b.dataset.again === 'yes' });
+    press('#outcomeCard [data-again]', b);
+    answered.again = true; done();
+  }));
+  $('outcomeSkip').addEventListener('click', () => {
+    tripLog.upsert({ id: p.id, outcomeAsked: true });
+    $('outcomeCard').hidden = true;
+  });
+  $('outcomeCard').hidden = false;
+})();
 
 /* Shown only when her own pattern differs from the verdict. Never changes it. */
 function paintPattern(r) {
   const habits = fares.habits;
   const p = currentTrip && patternFor(tripLog.all(), currentTrip.context, habits);
-  const show = !!p && p.mode !== r.winner;
+  const verdict = currentTrip?.recommended || r.winner;
+  const show = !!p && p.mode !== verdict;
   $('patternLine').hidden = !show;
   $('patternText').textContent = show ? describePattern(p, currentTrip.context, habits.bands) : '';
 }
@@ -1630,7 +1804,7 @@ document.querySelectorAll('#tookRow .took-btn').forEach((btn) => {
     if (!currentTrip) return;
     const id = tripLog.record({
       id: currentTrip.id, at: currentTrip.at, context: currentTrip.context,
-      shown: { recommended: currentTrip.recommended, variant: 'show-only' }, chose: btn.dataset.mode,
+      shown: currentTrip.shown || { recommended: currentTrip.recommended, variant: 'show-only' }, chose: btn.dataset.mode,
     });
     if (!id) {
       $('tookStatus').textContent = "Couldn't save on this phone (storage is blocked).";
