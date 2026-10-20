@@ -1,6 +1,6 @@
 # Spec — Family test v1: arrive-by answer + saved trips
 
-Status: draft for owner review · 2026-10-19 · web app (bridge to native, per step 3 in `PROJECT_STATE.md`)
+Status: draft · 2026-10-19 · **2026-10-20: personal utility first (owner is the only user); family is a later phase** · web app (bridge to native, per step 3 in `PROJECT_STATE.md`)
 
 ## Problem statement
 

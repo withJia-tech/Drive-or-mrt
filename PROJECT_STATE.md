@@ -147,3 +147,9 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
   - Storage blocked: "Couldn't save on this phone", no errors.
 - **Metrics impact:** the in-app log now supplies follow rate (`overrode`), regular-trip share (direction ≠ other) and second-week use. The paper diary is only needed for regret and decision time.
 - **Next:** the regret question and decision-time capture; then spec the in-app experiment after about 4 weeks of logs.
+
+### Audience: personal utility first, family later (owner, 2026-10-20)
+
+- **First user is the owner.** The family test becomes a later phase. Saved places, the trip log and patterns are per phone already, so adding family later needs no data changes, only setup on their phones.
+- **Vercel deploy blocked (2026-10-20):** the Vercel connector can read the team (`withjia-tech's projects`, which has one project, `signalvsnoise`), but creating a project returns 403 forbidden, both by direct upload and by GitHub link. There's no Vercel CLI in the sandbox. The owner creates the project in the dashboard (steps in chat), or reconnects the connector with project-create rights.
+- `proxy/` exists only on `claude/new-session-p75bbc`, not on `main`. A Vercel import with root directory `proxy` needs that branch, or a merge to `main` first.
