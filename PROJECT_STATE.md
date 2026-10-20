@@ -134,3 +134,16 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
 - **Tests:** `node --test` → 115/115. Phone-width Playwright with the server mocked: shipped (no calls, "Time estimated", privacy line hidden); up (~70 min "OneMap time"); down and slow (stays "Time estimated", no errors, no page jump).
 - **Owner tasks:** OneMap developer registration; LTA DataMall key; enter `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, `LTA_ACCOUNT_KEY` in Vercel; approve the first deploy.
 - **Next after deploy:** record a real OneMap response and replace the assumed fixture; check Toa Payoh → SGH against OneMap's own site by hand.
+
+### Learning from choices, show-only (2026-10-20)
+
+- **Built:** "Which did you take?" one-tap log; pattern line under the verdict; Save as Home / Work (also selectable as destinations); "Copy my trip log" export with no coordinates.
+- **Tests:** 135/135, and the time-sensitive ones also pass with `TZ` = UTC, New York, Tokyo.
+- **Phone-width run** (Playwright, weekday 08:30, home → work, cheaper MRT, she taps Drive):
+  - Trips 1–3: no pattern.
+  - Trip 4: "Weekday mornings, home → work: you drove 3 of the last 3 times." The verdict stays MRT.
+  - Evening work → home: no pattern; the morning habit doesn't leak.
+  - Export: 3 trips, all overrides, no coordinates.
+  - Storage blocked: "Couldn't save on this phone", no errors.
+- **Metrics impact:** the in-app log now supplies follow rate (`overrode`), regular-trip share (direction ≠ other) and second-week use. The paper diary is only needed for regret and decision time.
+- **Next:** the regret question and decision-time capture; then spec the in-app experiment after about 4 weeks of logs.

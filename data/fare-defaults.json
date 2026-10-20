@@ -43,5 +43,17 @@
     "maxDistanceKm": 300,
     "maxParkHours": 72,
     "caveat": "Guards against absurd input. Singapore is about 50 km end to end, so 300 km of one-way driving is already generous."
+  },
+  "habits": {
+    "bands": [
+      { "id": "morning", "label": "Mornings", "fromHour": 5, "toHour": 10 },
+      { "id": "day", "label": "Daytime", "fromHour": 10, "toHour": 17 },
+      { "id": "evening", "label": "Evenings", "fromHour": 17, "toHour": 21 },
+      { "id": "late", "label": "Late nights", "fromHour": 21, "toHour": 5 }
+    ],
+    "minSame": 3,
+    "window": 5,
+    "placeRadiusM": 300,
+    "caveat": "Owner decision 2026-10-20. Band edges are assumptions, Singapore time. A pattern is shown only when at least minSame of the last window trips in the same situation went the same way. Shown, never applied to the verdict (show-only)."
   }
 }

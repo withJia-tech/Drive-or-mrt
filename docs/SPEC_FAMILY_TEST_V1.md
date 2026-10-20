@@ -62,6 +62,8 @@ Measured from the family trip diary over 2 weeks (definitions in `PROJECT_STATE.
 
 **R4. Add to home screen.** A web manifest and icon so the app installs with its own icon on iPhone and Android.
 
+**R5. "Which did you take?" + your pattern (show-only).** One tap after each verdict, stored on the phone. When at least 3 of the last 5 trips in the same situation (time of day, Home/Work direction, weekday/weekend, purpose) went another way, show "Your pattern: …" under the verdict. The verdict never changes. Built 2026-10-20.
+
 ### P1 — nice to have
 
 - **P1-1. Offline:** a service worker so it opens with no signal, using the versioned cache plan from the architecture PDF.
@@ -71,6 +73,8 @@ Measured from the family trip diary over 2 weeks (definitions in `PROJECT_STATE.
 - **P1-4. Share a trip as a link:** encodes the saved trip in the URL, so the owner can send mum's trips to her phone. No server involved.
 
 ### P2 — design for, don't build
+
+- **In-app experiment:** let the pattern change the verdict on randomly chosen trips (`variant`), compared within the same person against show-only on follow rate and regret. Spec after about 4 weeks of logs.
 
 - **Live alert slot:** the headline has room for "NEL disrupted today", fed later by the proxy.
 - **Native widget:** reads the same saved-trip format and shows the last computed answer.

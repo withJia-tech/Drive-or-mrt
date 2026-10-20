@@ -320,3 +320,18 @@ Owner: SMRT times are predictable; drive times are good; Grab varies with the wa
 **Not verified yet:** OneMap and LTA response shapes, the `arriveBy` parameter, the token lifetime, rate limits and terms of use. All come from secondary sources, and the test fixtures say so. Replace them with real recorded responses once the owner's credentials exist.
 
 **Known gap:** when a OneMap time is used, the MRT "walk" cost line still uses the 10-minute walk assumption, not OneMap's walking minutes.
+
+## Revision: value of time is contextual — learn from her choices, show-only (2026-10-20)
+
+**Correction from the owner.** Value of time should matter to the decision. In the code until now it did not: the verdict was cash only (`selectWinner`), and the hourly rate only priced the walk on a soft line (H8). The owner's example shows why one $/hr figure is wrong. Mornings: she drives or takes a Grab even when the MRT is cheaper, because inertia is high. Work → dinner or home: she overrides toward the MRT, because the ride is decompression time. So value of time is learned per situation, from what she actually does.
+
+**Decided:**
+- **One tap after the verdict:** "Which did you take? MRT / Drive / Grab". Stored on the phone only (`tripLog.js`). Records are rebuilt from a whitelist, so they never contain coordinates. Capped at 500.
+- **Situation** = time-of-day band + trip direction (from saved Home / Work) + weekday/weekend + trip-purpose chip (`habits.js`, Singapore time). Bands and thresholds are labelled assumptions in `data/fare-defaults.json` → `habits`.
+- **Pattern** = at least 3 of the last 5 trips in the same situation went the same way. If the exact situation has too few trips, it backs off to a broader one; if it has enough trips but they're mixed, there's no pattern.
+- **Show-only.** The pattern line appears under the verdict, labelled "Your pattern", only when it differs from the verdict. **The verdict itself does not change.** Letting patterns change the verdict is a later in-app experiment: per-trip random assignment recorded in `variant`, compared within the same person (N-of-1), because a family is too small for an A/B test between people.
+- **Memory starts now.** This reverses plan Decision 3 ("no memory until validated"), deliberately, on the owner's word. It stays on the phone and is always visible.
+
+**Tension, kept visible:** the owner wants value of time to change the verdict, and also chose show-only for now. Both hold: show now, test changing the verdict later.
+
+**Also fixed:** "Parking at a this destination" wording; saved Home / Work can be picked as destinations (parking rate is asked, never guessed).
