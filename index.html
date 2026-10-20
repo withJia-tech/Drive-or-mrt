@@ -575,12 +575,15 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 /* ===== PLACE SEARCH ===== */
+/* While typing a place, the fixed bottom button would cover the suggestions. */
+body.typing-place .cta-bar { display: none; }
 .place-search { position: relative; margin-top: 10px; }
 .place-input {
   width: 100%; min-height: 52px; padding: 12px 20px;
   background: var(--card); color: var(--ink);
   border: 2.5px solid var(--ink); border-radius: var(--radius-pill);
   font: 500 16px var(--font-body); /* 16px stops iOS zooming in */
+  scroll-margin-top: 44px; /* keep the question above it visible */
 }
 .place-results { display: grid; gap: 6px; margin-top: 8px; }
 .place-results:empty { display: none; }
@@ -1495,11 +1498,23 @@ function placeSearch(inputId, resultsId, onPick) {
       b.addEventListener('click', () => {
         input.value = place.label;
         list.replaceChildren();
+        document.body.classList.remove('typing-place');
         onPick(place);
       });
       return b;
     }), ...(note ? [Object.assign(document.createElement('p'), { className: 'place-note', textContent: note })] : []));
   };
+  // Give the suggestions room: lift the box to the top, hide the bottom button.
+  input.addEventListener('focus', () => {
+    document.body.classList.add('typing-place');
+    setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+  });
+  input.addEventListener('blur', () => {
+    // Wait so a tap on a suggestion lands before the layout changes back.
+    setTimeout(() => {
+      if (!document.activeElement?.classList?.contains('place-input')) document.body.classList.remove('typing-place');
+    }, 200);
+  });
   input.addEventListener('input', () => {
     const q = input.value.trim();
     const mine = ++seq;
