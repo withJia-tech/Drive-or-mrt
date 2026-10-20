@@ -1,7 +1,0 @@
-{
-  "name": "drive-or-mrt-proxy",
-  "private": true,
-  "type": "module",
-  "description": "Small key-holding server for Drive or MRT: OneMap routes and LTA train alerts. No dependencies.",
-  "engines": { "node": ">=20" }
-}

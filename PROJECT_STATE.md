@@ -153,3 +153,11 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
 - **First user is the owner.** The family test becomes a later phase. Saved places, the trip log and patterns are per phone already, so adding family later needs no data changes, only setup on their phones.
 - **Vercel deploy blocked (2026-10-20):** the Vercel connector can read the team (`withjia-tech's projects`, which has one project, `signalvsnoise`), but creating a project returns 403 forbidden, both by direct upload and by GitHub link. There's no Vercel CLI in the sandbox. The owner creates the project in the dashboard (steps in chat), or reconnects the connector with project-create rights.
 - `proxy/` exists only on `claude/new-session-p75bbc`, not on `main`. A Vercel import with root directory `proxy` needs that branch, or a merge to `main` first.
+
+### Hosting moved to Vercel (2026-10-20)
+
+- The Vercel project `driveormrt` was imported from the repo root (not `proxy/`) and deployed `main` @ `01d5462`, the old app. Its status is Ready at https://driveormrt.vercel.app.
+- So Vercel now hosts **both** the app and the server: top-level `api/route.js` and `api/alerts.js` wrap `proxy/handler.js`, and `proxy/api/` was removed. `https://driveormrt.vercel.app` is added to the allowed origins.
+- Local smoke test of the entry files: `/api/alerts` and `/api/route` return 503 "not configured" without keys; a foreign origin gets 403.
+- GitHub Pages was never enabled (configure-pages fails with "Resource not accessible by integration"). It isn't needed now; the workflow will keep failing until Pages is enabled or the workflow is removed.
+- Still open: PR #2 merge; OneMap and LTA keys in Vercel; `PROXY_URL` stays empty until the keys exist.

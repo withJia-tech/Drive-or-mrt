@@ -1,6 +1,6 @@
 /**
  * The small server: one web-standard handler, no host-specific features.
- * Vercel adapters live in proxy/api/; a Cloudflare Worker would be
+ * Vercel adapters live in the repo's top-level api/; a Cloudflare Worker would be
  *   export default { fetch: (req, env) => handle(req, env) }
  *
  * Holds the OneMap login and LTA key so they never ship in app code.

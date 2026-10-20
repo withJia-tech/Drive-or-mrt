@@ -14,7 +14,8 @@ Use the project's existing runnable scripts and Claude Code's `/run`, `/verify` 
 
 ## Small server (`proxy/`)
 
-- Logic: `proxy/handler.js` (web-standard, host-agnostic) and `proxy/lib.js` (pure, tested in `test/proxy.test.js`). Vercel adapters: `proxy/api/route.js`, `proxy/api/alerts.js`.
-- Vercel project root is `proxy/`. Secrets live only in Vercel env vars: `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, `LTA_ACCOUNT_KEY`, optional `ALLOWED_ORIGINS`. Never in chat or the repo.
+- Logic: `proxy/handler.js` (web-standard, host-agnostic) and `proxy/lib.js` (pure, tested in `test/proxy.test.js`). Vercel adapters: top-level `api/route.js`, `api/alerts.js`.
+- **Hosting:** Vercel project `driveormrt` (repo root, framework Other, auto-deploys `main`) serves the app at https://driveormrt.vercel.app and the server at `/api/route` and `/api/alerts`. GitHub Pages was never enabled for this repo.
+- Vercel secrets: only in Vercel env vars: `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, `LTA_ACCOUNT_KEY`, optional `ALLOWED_ORIGINS`. Never in chat or the repo.
 - Turning it on in the app: set `PROXY_URL` in `transit.js` to the deployment URL.
 - Never log coordinates or query strings.

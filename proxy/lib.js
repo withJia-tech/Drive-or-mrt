@@ -34,6 +34,7 @@ export function corsHeaders(origin, allowed) {
 }
 
 export const DEFAULT_ORIGINS = [
+  'https://driveormrt.vercel.app', // the app and server share this address
   'https://withjia-tech.github.io',
   'http://127.0.0.1:8099',
   'http://localhost:8099',
