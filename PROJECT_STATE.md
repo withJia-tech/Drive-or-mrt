@@ -185,3 +185,10 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
   - Drive $7.25 → $7.58 cash (+$0.33 wear) → $12.31 all-in (+$4.73).
   - $1,184 a month to own; $11,393 fixed costs to 20 October.
 - Not verified: a real iPhone; the COE hint figures are as summarised from LTA's sheet and should be checked against the PDF.
+
+### QA and remediation (2026-10-20)
+
+- `docs/QA_REPORT.md`: D1–D7 found, root-caused and fixed with regressions.
+- Unit: 218/218. Browser: 32 pass, 3 blocked (real iPhone, live OneMap, screen reader).
+- **Pilot readiness:** limited pilot after PR #4 merges and the iPhone checklist passes.
+- **Open:** P1 (real iPhone, live OneMap, browser suite not in CI, heuristic data) and P2 items listed in the report.

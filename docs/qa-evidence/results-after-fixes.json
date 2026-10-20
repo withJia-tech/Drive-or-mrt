@@ -1,0 +1,279 @@
+[
+  {
+    "id": "QA-D1a",
+    "title": "Edited petrol and km/L before Compare are applied (10 km, $3.50, 10 km/L → $7.00)",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2577,
+    "note": "{\"petrol\":7}"
+  },
+  {
+    "id": "QA-D1b",
+    "title": "Editing petrol and km/L AFTER a result updates the result (no stale $5.00)",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2991,
+    "note": "{\"petrol\":7,\"total\":7}"
+  },
+  {
+    "id": "QA-D1c",
+    "title": "Clearing a required input after a result marks the result out of date",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2952,
+    "note": "{\"staleNote\":\"Your inputs changed and something is missing or out of range, so these figures are out of date. Fix the field named on the button below to update them.\"}"
+  },
+  {
+    "id": "QA-D2",
+    "title": "Manual distance without a destination can be completed (parking asked, not assumed free)",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 2149,
+    "note": "{\"calc\":\"completed\",\"petrol\":5}"
+  },
+  {
+    "id": "QA-D3",
+    "title": "Grab cheapest: headline and explanation agree (no \"Drive.\" / \"take the train\")",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2497,
+    "note": "{\"verdict\":\"Grab is cheapest at $10.00 return — $1.00 less than driving and $10.00 less than the MRT. Door to door, with no parking to pay.\"}"
+  },
+  {
+    "id": "QA-D4",
+    "title": "Explanation names the real cost driver (petrol, not $0.60 parking) and says \"1 hour\"",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 2547,
+    "note": "{\"verdict\":\"MRT saves you $17.00 on this trip. Petrol for the 80 km return trip ($20.00) is most of the driving cost. Unless you need door-to-door, take the train.\"}"
+  },
+  {
+    "id": "QA-D5",
+    "title": "Fuel economy 0 km/L or petrol $0 is refused, not priced as free petrol",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2301,
+    "note": "{\"label\":\"Check the petrol price: $0.50 to $10 a litre.\"}"
+  },
+  {
+    "id": "QA-D6",
+    "title": "Negative or out-of-range distance is refused with a message, not silently changed",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 2217,
+    "note": "{\"label\":\"Check the distance: more than 0 and up to 300 km one way.\"}"
+  },
+  {
+    "id": "QA-E-01",
+    "title": "GPS journey to TTSH: 2.5 km estimate, MRT cheapest, breakdown adds up",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 3238,
+    "note": "{\"cards\":\"Drive 7.25, MRT 3.6, Grab 9.75\",\"title\":\"MRTis the call.\"}"
+  },
+  {
+    "id": "QA-E-02",
+    "title": "Drive cheapest (manual 2 km, HDB 1 h, MRT $5): Drive headline and wording",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1857,
+    "note": "{\"cards\":\"Drive 1.6, MRT 10, Grab 9.2\"}"
+  },
+  {
+    "id": "QA-E-03",
+    "title": "MRT cheapest (manual 10 km, $3/h × 3 h): MRT wording",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1852,
+    "note": "{\"cards\":\"Drive 14, MRT 3.6, Grab 18\"}"
+  },
+  {
+    "id": "QA-E-04",
+    "title": "Grab cheapest (MRT $10, Grab $5): Grab headline and wording",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1703,
+    "note": "{\"cards\":\"Drive 11, MRT 20, Grab 10\"}"
+  },
+  {
+    "id": "QA-E-05",
+    "title": "Close call ($2 apart): Cheapest badge still on lowest cash, wording says comfort call",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1878,
+    "note": "{\"cards\":\"Drive 5.6, MRT 3.6, Grab 18\",\"verdict\":\"It's within $2.00 either way — this is a comfort call, not a cost one.\"}"
+  },
+  {
+    "id": "QA-E-06",
+    "title": "Recommendation vs cheapest: arrive-by plan recommends an on-time MRT while Drive is cheapest",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1738,
+    "note": "{\"plan\":\"Take the MRT · leave by 13:35\",\"why\":\"Arrive by 14:00, with a buffer of 10 min; MRT time: estimate.\"}"
+  },
+  {
+    "id": "QA-E-07",
+    "title": "Boundaries accepted: 0.1 and 300 km, 0 and 72 h, $0.50 and $10/L, 1 and 50 km/L",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1711,
+    "note": "{\"at300km\":150}"
+  },
+  {
+    "id": "QA-E-08",
+    "title": "Just outside the boundaries refused with a message: 300.1 km, 72.5 h, $0.49/L, 0.9 km/L, −1 rate",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1276,
+    "note": "{\"messages\":[\"Check the distance: more than 0 and up to 300 km one way.\",\"Check parking time: 0 to 72 hours.\",\"Check the petrol price: $0.50 to $10 a litre.\",\"Check fuel consumption: 1 to 50 km per litre.\",\"Check the parking rate: $0 to $200 an hour.\"]}"
+  },
+  {
+    "id": "QA-E-09",
+    "title": "Letters typed into the distance box are ignored; button asks for a distance",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 1137,
+    "note": "{\"label\":\"Choose your destination\"}"
+  },
+  {
+    "id": "QA-E-10",
+    "title": "Repeated edits: after 6 live changes the result equals a fresh calculation",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 4694,
+    "note": "{\"live\":[4.4,3.6,14.7],\"fresh\":[4.4,3.6,14.7]}"
+  },
+  {
+    "id": "QA-E-11",
+    "title": "Search server down (503), offline, or slow: on-phone places still found, no errors",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2747,
+    "note": "{\"down\":[\"VivoCity\"],\"abort\":[\"VivoCity\"],\"slow\":[\"VivoCity\"]}"
+  },
+  {
+    "id": "QA-E-12",
+    "title": "Route timing: server down → \"Time estimated\"; server answers → \"OneMap time\" (70 min return)",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 5235,
+    "note": "{\"down\":\"CHEAPEST 🚇 MRT $3.60 ~32 min TIME ESTIMATED\",\"up\":\"CHEAPEST 🚇 MRT $3.60 ~70 min ONEMAP TIME\"}"
+  },
+  {
+    "id": "QA-E-13",
+    "title": "Share text copied: totals match the cards, Grab marked (est), assumptions version stamped",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2174,
+    "note": "{\"text\":\"Drive There or MRT? 🚗🚇\\n\\n10km trip (3h parking):\\n🚗 Drive: $14.00 (petrol $5.00 + parking $9.00)\\n🚇 MRT: $3.60\\n🚕 Grab: $18.00 (est)\\n\\nMRT saves $10.40 vs driving. Door-to-door — your call.\\n\\nvia Is It Worth It? — estimates only, assumptions 2026.08\"}"
+  },
+  {
+    "id": "QA-E-14",
+    "title": "Clipboard refused: says so and offers the text to copy by hand",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 2345,
+    "note": "{\"fallback\":\"Drive There or MRT? 🚗🚇\"}"
+  },
+  {
+    "id": "QA-E-15a",
+    "title": "Layout at 320×568 (iPhone SE (1st gen)): no sideways scroll, button reachable, result renders",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1784,
+    "note": "{\"scrollW\":320,\"innerW\":320,\"btnBottom\":554,\"innerH\":568,\"cards\":3}"
+  },
+  {
+    "id": "QA-E-15b",
+    "title": "Layout at 375×667 (iPhone SE (2nd/3rd gen)): no sideways scroll, button reachable, result renders",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1778,
+    "note": "{\"scrollW\":375,\"innerW\":375,\"btnBottom\":653,\"innerH\":667,\"cards\":3}"
+  },
+  {
+    "id": "QA-E-15c",
+    "title": "Layout at 412×915 (Android (Pixel 7 size)): no sideways scroll, button reachable, result renders",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 1940,
+    "note": "{\"scrollW\":412,\"innerW\":412,\"btnBottom\":901,\"innerH\":915,\"cards\":3}"
+  },
+  {
+    "id": "QA-E-15d",
+    "title": "Layout at 768×1024 (tablet portrait): no sideways scroll, button reachable, result renders",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 2391,
+    "note": "{\"scrollW\":768,\"innerW\":768,\"btnBottom\":1010,\"innerH\":1024,\"cards\":3}"
+  },
+  {
+    "id": "QA-E-15e",
+    "title": "Layout at 1280×800 (desktop): no sideways scroll, button reachable, result renders",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 3125,
+    "note": "{\"scrollW\":1280,\"innerW\":1280,\"btnBottom\":786,\"innerH\":800,\"cards\":3}"
+  },
+  {
+    "id": "QA-E-16",
+    "title": "Estimates and assumptions are labelled: distance, Grab, MRT time, walk value, assumptions panel, disclaimer",
+    "priority": "P0",
+    "status": "PASS",
+    "ms": 3519,
+    "note": "{\"assumptions\":9}"
+  },
+  {
+    "id": "QA-E-17",
+    "title": "Time valuation labelled: rough $/hr caveat while train times are estimates",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 9784,
+    "note": "{\"line\":\"Weekday mornings: you have paid to save time: it seems worth at least $14/hr to you here (3 trips).\"}"
+  },
+  {
+    "id": "QA-E-18",
+    "title": "Location refused: explains the fix and offers typed start; nothing breaks",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 1587,
+    "note": "{\"msg\":\"Location is blocked for this site. On iPhone: Settings → Pri\"}"
+  },
+  {
+    "id": "QA-E-19",
+    "title": "Storage blocked: compare still works; \"I took\" says it could not save",
+    "priority": "P1",
+    "status": "PASS",
+    "ms": 1859,
+    "note": "{\"ok\":true}"
+  },
+  {
+    "id": "QA-E-20",
+    "title": "Every input and button has an accessible name",
+    "priority": "P2",
+    "status": "PASS",
+    "ms": 1224,
+    "note": "{\"checked\":\"inputs, selects, buttons\"}"
+  },
+  {
+    "id": "QA-B-01",
+    "title": "Real iPhone Safari: location prompt, keyboard, layout",
+    "priority": "P0",
+    "status": "BLOCKED",
+    "note": "No physical device in the sandbox. Owner to run the checklist in README → Testing on an iPhone."
+  },
+  {
+    "id": "QA-B-02",
+    "title": "Live OneMap search and route timing",
+    "priority": "P1",
+    "status": "BLOCKED",
+    "note": "Sandbox network refuses onemap.gov.sg; OneMap login not yet in Vercel. Shapes tested against assumed fixtures only."
+  },
+  {
+    "id": "QA-B-03",
+    "title": "Screen reader pass (VoiceOver)",
+    "priority": "P2",
+    "status": "BLOCKED",
+    "note": "Needs a device with VoiceOver. QA-E-20 checks names only."
+  }
+]

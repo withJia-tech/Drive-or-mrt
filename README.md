@@ -62,22 +62,49 @@ python3 -m http.server 8099
 # http://127.0.0.1:8099/
 ```
 
-## Tests
+## Testing
+
+Three levels. The first runs everywhere with no install; the browser suite needs Playwright.
+
+### 1. Unit and integration tests (no install)
 
 ```bash
-node --test        # 60 tests, no dependencies, no install
+node --test          # 218 tests, Node 22, no dependencies
 ```
 
-`test/calc.test.js` covers rules D1–D10, the layer where a wrong answer is a
-defect rather than a disagreement. `test/geo.test.js` covers the great-circle
-and winding-factor maths behind "use my location" — the same "defect, not a
-disagreement" layer, one step removed. `test/agent.test.js` covers bounded
-intent interpretation, one-question clarification and the no-booking/no-hidden-
-learning boundaries. `test/data-drift.test.js` guards the assumption files
-against their inline mirror and fails if they diverge.
+| File | What it proves |
+|---|---|
+| `test/qa-unit.test.js` | The arithmetic against hand-worked numbers (QA-U-xx), that no mode is favoured (every ordering of costs), and inputs → result → wording end to end (QA-I-xx), including all three outcomes, close calls and "recommended ≠ cheapest". |
+| `test/qa-verdict-validation.test.js` | The "Why this call" wording follows the real winner and the real cost driver; every input field has a checked range. |
+| `test/calc.test.js` | Rules D1–D10, the layer where a wrong answer is a defect, not a disagreement. |
+| `test/schedule.test.js`, `punctuality.test.js`, `insights.test.js`, `car.test.js` | Arrive-by rule, learned slip, value-of-time bounds, car ownership costs. |
+| `test/proxy.test.js`, `search.test.js`, `transit.test.js` | The small server and the app's calls to it, with the network mocked. |
+| `test/data-drift.test.js` | The assumption files match their built-in copy. |
 
-There are deliberately no tests on the heuristics. You cannot unit-test a
-guess. They are labelled in the UI instead, which is the honest alternative.
+### 2. Browser tests (needs Playwright)
+
+```bash
+npm i --no-save playwright && npx playwright install chromium   # once
+node e2e/run.cjs              # every case; prints PASS / FAIL / BLOCKED per case ID
+node e2e/run.cjs QA-D         # only the defect regressions
+```
+
+The harness starts its own local server, mocks the OneMap/LTA server (no case touches the network), runs each case in a fresh iPhone-sized browser with the Singapore time zone, and writes a screenshot per case plus `results.json` to `e2e/out/` (git-ignored). Cases live in `e2e/cases/`: `defects.cjs` (QA-D: one regression per confirmed defect) and `regression.cjs` (QA-E: journeys, the three outcomes, boundaries, invalid input, repeated edits, server failures, clipboard, five screen sizes, labelling, blocked storage, accessible names).
+
+Not in CI yet: CI has no browser. Run it locally before merging changes to `index.html`.
+
+### 3. On a real iPhone (manual, before a pilot)
+
+The browser suite imitates an iPhone; it is not one. Before inviting testers, on an iPhone in Safari (not inside another app):
+
+1. Open the site; tap **Use my current location** → allow → it says "Found you…".
+2. Type a destination (e.g. "raffles place") → OneMap suggestions with addresses appear.
+3. Enter parking hours → **Compare** → three prices, one "Cheapest".
+4. Change the petrol price in "Your car" → the result updates without pressing Compare.
+5. **Clip for the group chat** → paste into WhatsApp → numbers match the screen.
+6. Turn on Airplane mode → type "vivo" → VivoCity still appears; nothing breaks.
+
+There are deliberately no tests on the heuristics themselves (typical parking rates, speeds). You cannot unit-test a guess; they are labelled in the UI instead. The QA report is `docs/QA_REPORT.md`.
 
 ## Layout
 
