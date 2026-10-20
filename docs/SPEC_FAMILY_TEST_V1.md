@@ -94,7 +94,7 @@ Evaluate after 2 weeks of family use.
 | # | Question | Who | Blocking? |
 |---|---|---|---|
 | 1 | When did someone last hesitate — regular trip or one-off? (Decides widget vs app focus.) | Owner | No for v1; yes for native |
-| 2 | ~~Is 25 km/h fair?~~ Answered 2026-10-20: SMRT is predictable, so saved trips use the family's own train time; a real routing source (OneMap) is pending for one-off trips. | Owner | Resolved for saved trips |
+| 2 | ~~Is 25 km/h fair?~~ Answered 2026-10-20: saved trips use the family's own train time; one-off trips use OneMap via the small server (built, switched off until deployed). | Owner | Resolved |
 | 3 | Keep the leave-now rule "MRT if within 15 min of fastest"? | Owner | No |
 | 4 | Which reasons should override an on-time train, and to what? | Owner | Only for P1-2 |
 | 5 | Is a 10-minute buffer right? | Owner | No |

@@ -302,3 +302,21 @@ Owner: SMRT times are predictable; drive times are good; Grab varies with the wa
 - **Grab wait as a range.** New assumption `grabWaitWorstMin: 15` beside the typical `grabBufferMin: 6`. Arrive-by plans use the worst wait. A Grab that makes it only on a typical day is listed in `gambles`. If nothing is safe but a lucky Grab, the reason is `grab_gamble` and the advice is to leave now. An on-time train still wins outright. `grabBufferMin` keeps its name to avoid churning the UI and tests.
 
 **Station time table — not built.** No official station-to-station dataset was found on data.gov.sg. OneMap (Singapore Land Authority) offers free public-transport routing behind a token; it is a candidate source via the approved proxy. Owner decision pending.
+
+## Revision: OneMap train times and the location promise (2026-10-20)
+
+**Owner decisions:**
+- One-off trips get a real public-transport time from **OneMap** (Singapore Land Authority) through the small server.
+- Location is handled "like Google Maps or Grab". The old promise "location never leaves the device" becomes: **sent to OneMap only to plan the train route, never stored.** The page says so next to "Use my current location", and only when the server is switched on (`PROXY_URL` in `transit.js`). With it off, location still stays on the phone.
+
+**Precedence:** the family's own train time, then OneMap, then the 25 km/h estimate. The MRT card says which: "OneMap time" or "Time estimated".
+
+**Host: Vercel now, portable later.** The server is one web-standard handler (`proxy/handler.js`) with thin Vercel adapters (`proxy/api/`).
+- Vercel Hobby fits the family test and the widget. The owner already has an account, and the connector lets Claude deploy and read logs.
+- It blocks push alerts ("NEL down, drive today"), which need checks every few minutes; Hobby cron runs once a day.
+- A secondary source says Hobby is non-commercial only.
+- Moving to Cloudflare Workers (cron every minute, free) means adding one file: `export default { fetch: (req, env) => handle(req, env) }`.
+
+**Not verified yet:** OneMap and LTA response shapes, the `arriveBy` parameter, the token lifetime, rate limits and terms of use. All come from secondary sources, and the test fixtures say so. Replace them with real recorded responses once the owner's credentials exist.
+
+**Known gap:** when a OneMap time is used, the MRT "walk" cost line still uses the 10-minute walk assumption, not OneMap's walking minutes.

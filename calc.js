@@ -148,14 +148,22 @@ export function oneWayJourneyTimes({ distance, walkTime }, speeds) {
  *   `grabBufferMin`. Train and drive are treated as predictable.
  * `sources.mrt` says which train time was used, so the UI can label it.
  */
-export function scheduleDurations(input, speeds, { mrtMinutes } = {}) {
+export function scheduleDurations(input, speeds, { mrtMinutes, transitMinutes } = {}) {
   const durations = oneWayJourneyTimes(input, speeds);
-  const own = typeof mrtMinutes === 'number' ? mrtMinutes : Number(mrtMinutes);
-  const hasOwn = mrtMinutes !== null && mrtMinutes !== '' && Number.isFinite(own) && own > 0;
-  if (hasOwn) durations.mrt = own;
+  // Precedence: the family's own time, then OneMap's routed time, then the estimate.
+  const positive = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const own = positive(mrtMinutes);
+  const routed = positive(transitMinutes);
+  let source = 'estimate';
+  if (own !== null) { durations.mrt = own; source = 'yours'; }
+  else if (routed !== null) { durations.mrt = routed; source = 'onemap'; }
   const worstWait = Number.isFinite(speeds.grabWaitWorstMin) ? speeds.grabWaitWorstMin : speeds.grabBufferMin;
   const worst = { ...durations, grab: durations.grab - speeds.grabBufferMin + Math.max(worstWait, speeds.grabBufferMin) };
-  return { durations, worst, sources: { mrt: hasOwn ? 'yours' : 'estimate' } };
+  return { durations, worst, sources: { mrt: source } };
 }
 
 const asDate = (value) => {

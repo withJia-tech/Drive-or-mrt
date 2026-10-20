@@ -11,3 +11,10 @@ Use the project's existing runnable scripts and Claude Code's `/run`, `/verify` 
 - Phone check: Playwright is installed globally in the cloud sandbox; use device `iPhone 13`. Fill `#distance` and `#parkHours`, then tap the text "Calculate".
 - Deploy: push to `main` runs tests, then uploads the **whole repo folder** to GitHub Pages. Anything committed is public on the live site.
 - State lives in `PROJECT_STATE.md`; decisions in `docs/DECISIONS.md`. Don't start a second tracker.
+
+## Small server (`proxy/`)
+
+- Logic: `proxy/handler.js` (web-standard, host-agnostic) and `proxy/lib.js` (pure, tested in `test/proxy.test.js`). Vercel adapters: `proxy/api/route.js`, `proxy/api/alerts.js`.
+- Vercel project root is `proxy/`. Secrets live only in Vercel env vars: `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, `LTA_ACCOUNT_KEY`, optional `ALLOWED_ORIGINS`. Never in chat or the repo.
+- Turning it on in the app: set `PROXY_URL` in `transit.js` to the deployment URL.
+- Never log coordinates or query strings.

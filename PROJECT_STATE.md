@@ -126,3 +126,11 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
 **Diagnostics:** distance off by how many km (app vs actual); parking estimate vs what was actually paid; which reason made someone ignore the answer (rain, luggage, kids, late).
 
 **Decisions these drive:** regret over 10% means fix the estimates before native work. Regular-trip share under 50% means drop the widget and keep the app. Train-on-time hit rate under 90% means the MRT speed assumption (H4, 25 km/h) is too optimistic.
+
+### OneMap + small server (2026-10-20)
+
+- **Built:** `proxy/` (OneMap `/api/route`, LTA `/api/alerts`), `transit.js` client (4 s timeout, silent fallback), precedence yours > OneMap > estimate, MRT card label, privacy line.
+- **Switched off until deployed:** `PROXY_URL = ''` in `transit.js`, so no network calls and no location leaves the phone yet.
+- **Tests:** `node --test` → 115/115. Phone-width Playwright with the server mocked: shipped (no calls, "Time estimated", privacy line hidden); up (~70 min "OneMap time"); down and slow (stays "Time estimated", no errors, no page jump).
+- **Owner tasks:** OneMap developer registration; LTA DataMall key; enter `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, `LTA_ACCOUNT_KEY` in Vercel; approve the first deploy.
+- **Next after deploy:** record a real OneMap response and replace the assumed fixture; check Toa Payoh → SGH against OneMap's own site by hand.

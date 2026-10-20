@@ -688,6 +688,7 @@ input[type=number] { -moz-appearance: textfield; }
             <span id="geoBtnLabel">Use my current location</span>
           </button>
           <p class="field-helper geo-status" id="geoStatus" role="status" aria-live="polite"></p>
+          <p class="field-helper" id="geoPrivacy" hidden>Your location is sent to OneMap (Singapore Land Authority) to plan the train route. We don't store it.</p>
         </div>
         <div class="field geo-dest" id="geoDest">
           <label class="field-label" for="geoLandmark">Where are you headed?</label>
@@ -923,6 +924,7 @@ import { computeAll, shareString, toNumber, round2 } from './calc.js';
 import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
+import { fetchTransitMinutes, PROXY_URL } from './transit.js';
 
 const $ = (id) => document.getElementById(id);
 const money = (n) => `$${n.toFixed(2)}`;
@@ -934,6 +936,11 @@ const { fares, parking, landmarks, source } = await loadAssumptions();
 
 const state = { context: null, rateOverridden: false, distanceFromGeo: null };
 const geoState = { origin: null };
+/* Real public-transport time from OneMap via our server, for the trip in `key`.
+   Only used when the trip is GPS + a picked place, so the route matches. */
+const transit = { key: null, minutes: null, pending: null };
+// Say so only when it's true: with no server configured, location stays on the phone.
+$('geoPrivacy').hidden = !PROXY_URL;
 let lastResult = null;
 let lastMeta = null;
 
@@ -1136,7 +1143,7 @@ function paintAssumptions(r, input) {
 }
 
 /* -------------------------------------------------------------- calculate */
-function calculate() {
+function calculate({ quiet = false } = {}) {
   const input = currentInput();
   if (!input.distance) return;
 
@@ -1150,9 +1157,12 @@ function calculate() {
     distance: input.distance,
   };
 
+  // OneMap's time is door to door one way, walking included, so return = × 2.
+  const routed = transit.key && transit.key === currentTransitKey() && transit.minutes;
+  const mrtTime = routed ? transit.minutes * 2 : r.times.mrt;
   const options = [
     { key: 'drive', name: 'Drive', icon: '🚗', cost: r.drive, time: r.times.drive },
-    { key: 'mrt', name: 'MRT', icon: '🚇', cost: r.mrt, time: r.times.mrt },
+    { key: 'mrt', name: 'MRT', icon: '🚇', cost: r.mrt, time: mrtTime, timeSource: routed ? 'OneMap time' : 'Time estimated' },
     { key: 'grab', name: 'Grab', icon: '🚕', cost: r.grab, time: r.times.grab },
   ];
 
@@ -1165,7 +1175,8 @@ function calculate() {
       <div class="option-name">${o.name}</div>
       <div class="option-cost">${money(o.cost)}</div>
       <div class="option-time">~${Math.round(o.time)} min</div>
-      ${o.key === 'grab' && r.grabEstimated ? '<span class="option-est">Estimated</span>' : ''}`;
+      ${o.key === 'grab' && r.grabEstimated ? '<span class="option-est">Estimated</span>' : ''}
+      ${o.timeSource ? `<span class="option-est" data-time-source>${o.timeSource}</span>` : ''}`;
     return el;
   }));
 
@@ -1197,6 +1208,8 @@ function calculate() {
   const [accent, tail] = titles[r.winner];
   $('resultTitle').innerHTML = `<span class="accent">${accent}</span><br>${tail}`;
 
+  // A quiet redraw (a real train time arriving later) must not jump the page.
+  if (quiet) return;
   ['card1','card2','card3','card4'].forEach(collapse);
   $('result').hidden = false;
   setTimeout(() => {
@@ -1407,7 +1420,30 @@ $('distance').addEventListener('input', () => {
   setGeoStatus('');
 });
 
-$('calcBtn').addEventListener('click', calculate);
+/* The trip OneMap can route: GPS origin + a picked place, distance still from GPS. */
+function currentTransitKey() {
+  if (!geoState.origin || !state.distanceFromGeo) return null;
+  const place = landmarks.places.find((p) => p.id === $('geoLandmark').value);
+  if (!place) return null;
+  return `${geoState.origin.lat.toFixed(4)},${geoState.origin.lng.toFixed(4)}>${place.id}`;
+}
+
+/* Ask once per trip; the answer arrives later and re-renders with a real time.
+   If the server is off, slow or down, nothing changes: the estimate stays. */
+async function refineTransitTime() {
+  const key = currentTransitKey();
+  if (!PROXY_URL || !key || key === transit.key || key === transit.pending) return;
+  const place = landmarks.places.find((p) => p.id === $('geoLandmark').value);
+  transit.pending = key;
+  const result = await fetchTransitMinutes(geoState.origin, { lat: place.lat, lng: place.lng });
+  if (transit.pending === key) transit.pending = null;
+  if (!result || key !== currentTransitKey()) return;
+  transit.key = key;
+  transit.minutes = result.minutes;
+  if (!$('result').hidden) calculate({ quiet: true });
+}
+
+$('calcBtn').addEventListener('click', () => { calculate(); refineTransitTime(); });
 
 $('editAssumptionsBtn').addEventListener('click', () => {
   ['card2', 'card3'].forEach((id) => {
