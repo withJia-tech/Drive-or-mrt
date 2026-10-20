@@ -620,6 +620,14 @@ body.typing-place .cta-bar { display: none; }
 .outcome-q { display: block; font: 700 12px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
 .outcome-skip { margin-top: 12px; background: none; border: none; font: 600 14px var(--font-body); color: var(--ink-soft); text-decoration: underline; cursor: pointer; min-height: 44px; }
 
+/* ===== REASONS / INSIGHTS ===== */
+.reasons { margin-top: 14px; }
+.reasons[hidden] { display: none; }
+.took-btn.chip { flex: 0 1 auto; min-width: 0; padding: 8px 14px; font-size: 13px; }
+.insights { margin: 0 0 18px; padding: 16px 18px; background: var(--card); border: 2px dashed var(--ink); border-radius: var(--radius-panel); }
+.insights[hidden] { display: none; }
+.insights-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; font: 500 14px/1.5 var(--font-body); color: var(--ink); }
+
 /* ===== I TOOK ===== */
 .took { margin: 18px 0; }
 .took-label { font: 700 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
@@ -1005,6 +1013,22 @@ body.typing-place .cta-bar { display: none; }
         <button type="button" class="took-btn" data-mode="grab" aria-pressed="false">🚕 Grab</button>
       </div>
       <p class="took-status" id="tookStatus" role="status" aria-live="polite"></p>
+      <div class="reasons" id="reasonRow" hidden>
+        <div class="took-label" id="reasonLabel">Why this one? <span class="optional-tag">optional, pick any</span></div>
+        <div class="took-buttons" role="group" aria-labelledby="reasonLabel">
+          <button type="button" class="took-btn chip" data-reason="comfort" aria-pressed="false">Comfort</button>
+          <button type="button" class="took-btn chip" data-reason="faster" aria-pressed="false">Faster</button>
+          <button type="button" class="took-btn chip" data-reason="carrying" aria-pressed="false">Carrying things</button>
+          <button type="button" class="took-btn chip" data-reason="weather" aria-pressed="false">Weather</button>
+          <button type="button" class="took-btn chip" data-reason="tired" aria-pressed="false">Tired</button>
+          <button type="button" class="took-btn chip" data-reason="habit" aria-pressed="false">Habit</button>
+        </div>
+      </div>
+    </div>
+    <div class="insights" id="insightsBox" hidden>
+      <div class="took-label">What your trips say</div>
+      <ul class="insights-list" id="insightsList"></ul>
+      <p class="took-status" id="insightsNote"></p>
     </div>
     <div class="result-actions">
       <button type="button" class="copy-btn" id="copyBtn"><span id="copyLabel">Clip for the group chat</span></button>
@@ -1061,7 +1085,7 @@ import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
 import { fetchTransitMinutes, searchPlaces, PROXY_URL } from './transit.js';
 import { localMatches, mergeResults } from './places.js';
-import { contextOf, directionOf, patternFor, describePattern, slipMinutes, pendingOutcome } from './habits.js';
+import { contextOf, directionOf, patternFor, describePattern, slipMinutes, pendingOutcome, valueOfTimeBounds, describeValueOfTime, outcomeSummary, situationLabel } from './habits.js';
 import { makeTripLog, makeSavedPlaces, makeCarSettings } from './tripLog.js';
 
 const $ = (id) => document.getElementById(id);
@@ -1378,6 +1402,7 @@ function calculate({ quiet = false } = {}) {
   if (!quiet) startTrip(r);
   paintPlan(r, input);
   paintPattern(r);
+  paintInsights();
 
   // A quiet redraw (a real train time arriving later) must not jump the page.
   if (quiet) return;
@@ -1670,6 +1695,9 @@ function startTrip(r) {
   document.querySelectorAll('#tookRow .took-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
   $('tookStatus').textContent = '';
   $('leavingStatus').textContent = '';
+  currentTrip.reasons = [];
+  $('reasonRow').hidden = true;
+  document.querySelectorAll('#reasonRow .chip').forEach((b) => b.setAttribute('aria-pressed', 'false'));
 }
 
 /* ------------------------------------------- arrive-by plan (step 1)
@@ -1696,6 +1724,7 @@ function paintPlan(r, input) {
   const d = scheduleDurations(input, fares.speeds, { transitMinutes: routed });
   const round = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v)]));
   currentTrip.recommended = r.winner;
+  currentTrip.mrtSource = d.sources.mrt;
   currentTrip.shown = {
     recommended: r.winner, variant: 'show-only',
     costs: { mrt: r.mrt, drive: r.drive, grab: r.grab },
@@ -1730,6 +1759,7 @@ function paintPlan(r, input) {
   if (plan.gambles.includes('grab') && mode !== 'grab') why.push('Grab only makes it if the car comes quickly');
   why.push(`MRT time: ${d.sources.mrt === 'onemap' ? 'OneMap' : 'estimate'}`);
 
+  currentTrip.mrtSource = d.sources.mrt;
   currentTrip.recommended = mode;
   currentTrip.shown.recommended = mode;
   currentTrip.shown.suggestedLeaveBy = plan.leaveBy.toISOString();
@@ -1789,6 +1819,48 @@ $('leavingBtn').addEventListener('click', () => {
   $('outcomeCard').hidden = false;
 })();
 
+/* ---------------------------------------- what your trips say (step 2)
+   Show-only: counted from her own taps, never changes the verdict. */
+const REASON_LABELS = { comfort: 'Comfort', faster: 'Faster', carrying: 'Carrying things', weather: 'Weather', tired: 'Tired', habit: 'Habit' };
+
+document.querySelectorAll('#reasonRow .chip').forEach((chip) => chip.addEventListener('click', () => {
+  if (!currentTrip || !currentTrip.id) return;
+  const set = new Set(currentTrip.reasons || []);
+  const k = chip.dataset.reason;
+  if (set.has(k)) set.delete(k); else set.add(k);
+  currentTrip.reasons = [...set];
+  if (tripLog.upsert({ id: currentTrip.id, reasons: currentTrip.reasons })) {
+    chip.setAttribute('aria-pressed', String(set.has(k)));
+    paintInsights();
+  }
+}));
+
+function paintInsights() {
+  if (!currentTrip) return;
+  const log = tripLog.all();
+  const ctx = currentTrip.context;
+  const bands = fares.habits.bands;
+  const lines = [];
+  const v = valueOfTimeBounds(log, ctx);
+  if (v) lines.push(`${situationLabel(v.level, ctx, bands)}: ${describeValueOfTime(v)} (${v.informative} trips).`);
+  const o = outcomeSummary(log, ctx);
+  if (o && o.reasons.length) {
+    lines.push(`Your reasons for going your own way: ${o.reasons.slice(0, 3).map(([k, c]) => `${REASON_LABELS[k] || k} ×${c}`).join(', ')}.`);
+  }
+  const slip = slipMinutes(log, ctx);
+  if (slip) {
+    lines.push(slip.median > 0 ? `You usually leave ${slip.median} min after the suggested time (last ${slip.of} trips).`
+      : slip.median < 0 ? `You usually leave ${-slip.median} min early (last ${slip.of} trips).`
+        : `You usually leave right on time (last ${slip.of} trips).`);
+  }
+  if (o && o.arrival) lines.push(`Arrive-by trips: ${o.arrival.onTime} of ${o.arrival.of} on time.`);
+  if (o && o.regret && o.regret.no > 0) lines.push(`You'd choose differently on ${o.regret.no} of ${o.regret.of} trips.`);
+  $('insightsList').replaceChildren(...lines.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+  $('insightsNote').textContent = v && currentTrip.mrtSource !== 'onemap'
+    ? 'Train times are estimates until OneMap timing is switched on, so the $/hr figures are rough.' : '';
+  $('insightsBox').hidden = lines.length === 0;
+}
+
 /* Shown only when her own pattern differs from the verdict. Never changes it. */
 function paintPattern(r) {
   const habits = fares.habits;
@@ -1814,6 +1886,16 @@ document.querySelectorAll('#tookRow .took-btn').forEach((btn) => {
     document.querySelectorAll('#tookRow .took-btn').forEach((b) =>
       b.setAttribute('aria-pressed', String(b === btn)));
     $('tookStatus').textContent = 'Saved on this phone. Tap another to change it.';
+    // Going against the verdict? One optional tap says why. Same as the verdict: no question.
+    const overrode = btn.dataset.mode !== currentTrip.recommended;
+    $('reasonRow').hidden = !overrode;
+    if (!overrode && currentTrip.reasons && currentTrip.reasons.length) {
+      // Changed her tap to the verdict: a reason for overriding no longer applies.
+      currentTrip.reasons = [];
+      tripLog.upsert({ id: currentTrip.id, reasons: [] });
+      document.querySelectorAll('#reasonRow .chip').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    }
+    paintInsights();
   });
 });
 

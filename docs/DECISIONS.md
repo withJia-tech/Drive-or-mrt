@@ -355,3 +355,14 @@ Owner's challenge: decisions aren't purely about cost, and Calendar travel alert
 - **Next-open card** about her last chosen trip: "Arrived early / on time / late" (only if it had an arrive-by time) and "Same choice again?". Asked once, skippable, older trips never chased.
 - Trip records are now v2: one record per trip, filled in over time (`upsert`), whitelisted, no coordinates. v1 records still read.
 - Next: step 2 (reasons + value-of-time insights), step 3 (car ownership, Cash ↔ All-in).
+
+## Revision: learn why she chooses, step 2 — reasons and value of time (2026-10-20)
+
+- **Why, only on overrides.** After an "I took" tap that goes against the verdict, optional chips: Comfort · Faster · Carrying things · Weather · Tired · Habit. Changing her tap back to the verdict clears them.
+- **What her time seems worth** (`valueOfTimeBounds`). Counted, not inferred. Each choice is compared with each alternative she was shown:
+  - paid more to arrive sooner → a lower bound
+  - took cheaper but slower → an upper bound
+  - paid more *and* was slower → "not about money or minutes"
+  - cheaper and faster → says nothing
+  Costs are return totals and minutes one way, so minutes are doubled. Needs 3 informative trips in a situation (same back-off). Crossing bounds are reported as "isn't about money or minutes here".
+- **"What your trips say" panel**, show-only: value of time per situation, top reasons, usual slip, arrive-by on-time rate, "would choose differently". When train times are estimates it adds a caveat that the $/hr figures are rough.
