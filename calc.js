@@ -139,6 +139,25 @@ export function oneWayJourneyTimes({ distance, walkTime }, speeds) {
   };
 }
 
+/**
+ * One-way durations for the schedule rule, in two versions (brainstorm 2026-10-20):
+ * - `durations`: the typical journey. If the family typed their own door-to-door
+ *   train time (`mrtMinutes`), it replaces the 25 km/h guess. SMRT is predictable,
+ *   so someone who makes the trip regularly knows better than the model.
+ * - `worst`: the same, except Grab waits `grabWaitWorstMin` instead of the typical
+ *   `grabBufferMin`. Train and drive are treated as predictable.
+ * `sources.mrt` says which train time was used, so the UI can label it.
+ */
+export function scheduleDurations(input, speeds, { mrtMinutes } = {}) {
+  const durations = oneWayJourneyTimes(input, speeds);
+  const own = typeof mrtMinutes === 'number' ? mrtMinutes : Number(mrtMinutes);
+  const hasOwn = mrtMinutes !== null && mrtMinutes !== '' && Number.isFinite(own) && own > 0;
+  if (hasOwn) durations.mrt = own;
+  const worstWait = Number.isFinite(speeds.grabWaitWorstMin) ? speeds.grabWaitWorstMin : speeds.grabBufferMin;
+  const worst = { ...durations, grab: durations.grab - speeds.grabBufferMin + Math.max(worstWait, speeds.grabBufferMin) };
+  return { durations, worst, sources: { mrt: hasOwn ? 'yours' : 'estimate' } };
+}
+
 const asDate = (value) => {
   // new Date(null) is 1 Jan 1970, a valid date: a blank time would read as a
   // deadline decades ago. Blank means no time given.
@@ -162,21 +181,29 @@ export function recommendForSchedule({
   bufferMin = 10,
   costs,
   durations,
+  worstDurations = durations,
 }) {
   const baseNow = asDate(now) || new Date();
   const requested = asDate(requestedAt);
   const ids = ['mrt', 'drive', 'grab'];
   const candidates = ids.map((id) => {
     const durationMin = Math.max(0, Number(durations[id]) || 0);
+    // Arrive-by plans on the bad-day duration, so a leave-by time is safe.
+    const worstMin = Math.max(durationMin, Number(worstDurations[id]) || 0);
     let departAt = new Date(baseNow);
     if (timingMode === 'depart_at' && requested) departAt = new Date(requested);
+    let typicalOk = true;
     if (timingMode === 'arrive_by' && requested) {
-      departAt = new Date(requested.getTime() - (durationMin + bufferMin) * 60000);
+      departAt = new Date(requested.getTime() - (worstMin + bufferMin) * 60000);
+      typicalOk = requested.getTime() - (durationMin + bufferMin) * 60000 >= baseNow.getTime();
     }
     const arriveAt = new Date(departAt.getTime() + durationMin * 60000);
     const feasible = timingMode !== 'arrive_by' || !requested || departAt >= baseNow;
-    return { id, cost: costs[id], durationMin, departAt, arriveAt, feasible };
+    // On time only if the wait is typical, not on a bad day.
+    const gamble = !feasible && typicalOk;
+    return { id, cost: costs[id], durationMin, worstMin, departAt, arriveAt, feasible, gamble };
   });
+  const gambles = candidates.filter((candidate) => candidate.gamble).map((candidate) => candidate.id);
 
   const feasible = candidates.filter((candidate) => candidate.feasible);
   const cheapest = (pool) => pool.reduce((best, candidate) =>
@@ -195,6 +222,10 @@ export function recommendForSchedule({
     } else if (feasible.length) {
       recommended = cheapest(feasible);
       reason = 'train_too_late';
+    } else if (gambles.length) {
+      // Nothing is safe, but something makes it on a typical day. Say so, leave now.
+      recommended = { ...cheapest(candidates.filter((candidate) => candidate.gamble)), departAt: new Date(baseNow) };
+      reason = gambles.includes('grab') ? 'grab_gamble' : 'gamble';
     } else {
       // Nobody makes it. Back-scheduled arrivals all equal the deadline, so
       // compare by leaving now: the shortest journey arrives least late.
@@ -219,6 +250,7 @@ export function recommendForSchedule({
     bufferMin,
     recommended: recommended.id,
     reason,
+    gambles,
     leaveBy: recommended.departAt,
     allFeasible: candidates.every((candidate) => candidate.feasible),
     candidates,

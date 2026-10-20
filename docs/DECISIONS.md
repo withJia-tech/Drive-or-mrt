@@ -292,3 +292,13 @@ This replaces the earlier `recommendForSchedule` rule (latest departure wins), w
 Found while testing: a blank arrival time was parsed as 1 Jan 1970 (`new Date(null)`), making every mode look late. Fixed in `asDate`.
 
 Still open: leave-now / depart-at keeps the "MRT if within 15 min of the fastest" rule. Escalation reasons (rain, luggage, kids) are not wired yet. Neither the rule nor a timing input is in the UI yet.
+
+## Revision: credible journey times (brainstorm 2026-10-20)
+
+Owner: SMRT times are predictable; drive times are good; Grab varies with the wait. So the risk to leave-by times is our MRT model (road distance ÷ 25 km/h), not the trains.
+
+**Built:**
+- **Your own train time.** `scheduleDurations(input, speeds, { mrtMinutes })` uses a family-typed door-to-door MRT time when given, otherwise the estimate. It returns `sources.mrt` (`yours` / `estimate`) so the UI can label which one is used.
+- **Grab wait as a range.** New assumption `grabWaitWorstMin: 15` beside the typical `grabBufferMin: 6`. Arrive-by plans use the worst wait. A Grab that makes it only on a typical day is listed in `gambles`. If nothing is safe but a lucky Grab, the reason is `grab_gamble` and the advice is to leave now. An on-time train still wins outright. `grabBufferMin` keeps its name to avoid churning the UI and tests.
+
+**Station time table — not built.** No official station-to-station dataset was found on data.gov.sg. OneMap (Singapore Land Authority) offers free public-transport routing behind a token; it is a candidate source via the approved proxy. Owner decision pending.

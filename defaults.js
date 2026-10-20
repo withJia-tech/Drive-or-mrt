@@ -58,6 +58,9 @@ export const FARE_DEFAULTS = {
     mrtKmh: 25,
     grabKmh: 40,
     grabBufferMin: 6,
+    grabWaitWorstMin: 15,
+    grabWaitNote:
+      'Assumption, not data. grabBufferMin is a typical wait for the car; grabWaitWorstMin is a bad-day wait (rain, peak). Arrive-by plans use the worst case so a Grab plan is never the one that makes you late.',
     returnJourney: true,
     caveat:
       'H3 and H4. No traffic model, no transfer or platform-wait model. The MRT figure is the most under-modelled number in the build.',

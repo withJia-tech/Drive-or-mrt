@@ -54,7 +54,7 @@ Measured from the family trip diary over 2 weeks (definitions in `PROJECT_STATE.
 **R2. Reason is visible.** The headline states which case applies (train on time / train late / nothing on time), and the cost comparison stays visible below or one tap away.
 - The leave-by time is labelled as an estimate, naming the MRT speed assumption (H4).
 
-**R3. Saved trips.** Save the current trip with a name (for example "Mum → SGH"): destination, distance, parking hours, optional usual arrive-by time. Show the list at the top when opening the app; one tap fills everything and shows the answer.
+**R3. Saved trips.** Save the current trip with a name (for example "Mum → SGH"): destination, distance, parking hours, optional usual arrive-by time, and an optional **usual door-to-door train time** (`mrtMinutes`), which replaces the 25 km/h estimate and is labelled "your usual 35 min". Show the list at the top when opening the app; one tap fills everything and shows the answer.
 - Stored on the phone only (`localStorage`), wrapped so the app still works if storage is blocked (private browsing).
 - Edit, delete, up to 10 trips.
 - Saved values are inputs only. Rates and fares always come from the current `data/*.json`, so a price update reaches saved trips automatically.
@@ -67,6 +67,7 @@ Measured from the family trip diary over 2 weeks (definitions in `PROJECT_STATE.
 - **P1-1. Offline:** a service worker so it opens with no signal, using the versioned cache plan from the architecture PDF.
 - **P1-2. Reason chips:** rain, luggage, kids or mobility can escalate past an on-time train. These need a rule, not just a chip (open question 4).
 - **P1-3. Adjustable buffer:** the 10-minute default, editable per trip.
+- **P1-5. Grab as a gamble:** show when Grab makes the time only on a typical wait (logic built: `gambles`, `grab_gamble`).
 - **P1-4. Share a trip as a link:** encodes the saved trip in the URL, so the owner can send mum's trips to her phone. No server involved.
 
 ### P2 — design for, don't build
@@ -93,7 +94,7 @@ Evaluate after 2 weeks of family use.
 | # | Question | Who | Blocking? |
 |---|---|---|---|
 | 1 | When did someone last hesitate — regular trip or one-off? (Decides widget vs app focus.) | Owner | No for v1; yes for native |
-| 2 | Is 25 km/h a fair MRT estimate for your family's routes? Leave-by times depend on it. A real public-transport routing source may be needed. | Owner + engineering | No, but goal 2 may fail on it |
+| 2 | ~~Is 25 km/h fair?~~ Answered 2026-10-20: SMRT is predictable, so saved trips use the family's own train time; a real routing source (OneMap) is pending for one-off trips. | Owner | Resolved for saved trips |
 | 3 | Keep the leave-now rule "MRT if within 15 min of fastest"? | Owner | No |
 | 4 | Which reasons should override an on-time train, and to what? | Owner | Only for P1-2 |
 | 5 | Is a 10-minute buffer right? | Owner | No |
