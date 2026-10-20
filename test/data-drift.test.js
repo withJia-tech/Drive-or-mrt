@@ -87,7 +87,7 @@ describe('the assumption files stay usable', () => {
     // If a constant cannot say why it is what it is, it should not be shipped
     // as fact. The UI reads these caveats straight out of the file.
     const fares = await readJson('../data/fare-defaults.json');
-    for (const key of ['grabEstimate', 'speeds', 'verdict', 'limits', 'habits']) {
+    for (const key of ['grabEstimate', 'speeds', 'verdict', 'limits', 'habits', 'car']) {
       assert.ok(fares[key].caveat, `${key} needs a caveat`);
     }
     const parking = await readJson('../data/parking-defaults.json');

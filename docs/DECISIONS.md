@@ -345,3 +345,34 @@ Owner, after trying it on an iPhone:
 - **Server switched on.** `PROXY_URL = https://driveormrt.vercel.app`. Search works now. `/api/route` answers "not configured" until the OneMap login is in Vercel, and the app falls back silently. The privacy line now says what is sent and when.
 
 Not verified: real OneMap search responses (this sandbox can't reach onemap.gov.sg), and a real iPhone.
+
+## Revision: learn why she chooses, step 1 — punctuality (2026-10-20)
+
+Owner's challenge: decisions aren't purely about cost, and Calendar travel alerts don't make anyone punctual. So we measure outcomes, not compliance.
+- **Arrive-by on screen.** With a time set, the headline uses the feasibility-first rule: "Take the MRT · leave by 13:34". The cost cards stay below. A time that has passed is said so, never read as tomorrow.
+- **"I'm leaving now"** records when she actually left, against the suggested leave-by.
+- **Personal slip:** the median minutes late over the last trips in the same situation (at least 3; capped 0–30). It's added to the 10-minute buffer and said in plain words. Leaving early adds nothing.
+- **Next-open card** about her last chosen trip: "Arrived early / on time / late" (only if it had an arrive-by time) and "Same choice again?". Asked once, skippable, older trips never chased.
+- Trip records are now v2: one record per trip, filled in over time (`upsert`), whitelisted, no coordinates. v1 records still read.
+- Next: step 2 (reasons + value-of-time insights), step 3 (car ownership, Cash ↔ All-in).
+
+## Revision: learn why she chooses, step 2 — reasons and value of time (2026-10-20)
+
+- **Why, only on overrides.** After an "I took" tap that goes against the verdict, optional chips: Comfort · Faster · Carrying things · Weather · Tired · Habit. Changing her tap back to the verdict clears them.
+- **What her time seems worth** (`valueOfTimeBounds`). Counted, not inferred. Each choice is compared with each alternative she was shown:
+  - paid more to arrive sooner → a lower bound
+  - took cheaper but slower → an upper bound
+  - paid more *and* was slower → "not about money or minutes"
+  - cheaper and faster → says nothing
+  Costs are return totals and minutes one way, so minutes are doubled. Needs 3 informative trips in a situation (same back-off). Crossing bounds are reported as "isn't about money or minutes here".
+- **"What your trips say" panel**, show-only: value of time per situation, top reasons, usual slip, arrive-by on-time rate, "would choose differently". When train times are estimates it adds a caveat that the $/hr figures are rough.
+
+## Revision: learn why she chooses, step 3 — your car's true cost (2026-10-20)
+
+- **One-time setup** under "Your car": price paid including COE, years kept (10), value at the end, insurance, road tax, servicing and tyres, season parking, and km a year. The price must be hers. Other blanks are prefilled from `fare-defaults.json` → `car` (H10): labelled, dated and sourced, with the COE hint from LTA's January 2026 results. The car block lives in the existing assumptions file, not a new one: it's already loaded, mirrored and drift-tested.
+- **Two lenses, switchable** (owner choice), remembered per phone:
+  - **This trip (cash):** petrol, parking, ERP and wear (servicing and tyres per km). Wear does grow with each trip.
+  - **All-in:** adds a per-km share of fixed costs, (depreciation + insurance + road tax + season parking) × 12 ÷ km a year. Labelled: "includes costs you pay whether or not you drive today".
+  The lens flows through `computeAll` (`driveExtra`), so the winner, verdict and share text stay consistent. Trips are always **logged at cash cost**, whatever the lens.
+- **"Your car this year"**: fixed costs since 1 January (Singapore time) plus the logged drive trips, per trip, against what the same trips would have cost by MRT or Grab.
+- **Moved "Your car" out of "Enter distance manually"**, where location users would never have found it.

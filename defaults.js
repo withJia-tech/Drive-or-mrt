@@ -92,6 +92,24 @@ export const FARE_DEFAULTS = {
     caveat:
       'Owner decision 2026-10-20. Band edges are assumptions, Singapore time. A pattern is shown only when at least minSame of the last window trips in the same situation went the same way. Shown, never applied to the verdict (show-only).',
   },
+  car: {
+    "logicId": "H10",
+    "asOf": "2026-10",
+    "yearsKept": 10,
+    "endValue": 0,
+    "insurancePerYear": 1500,
+    "roadTaxPerYear": 744,
+    "servicingPerYear": 1000,
+    "seasonParkingPerMonth": 80,
+    "kmPerYear": 15000,
+    "coeHint": {
+      "catA": 102009,
+      "catB": 119100,
+      "round": "January 2026, 1st round",
+      "source": "LTA M11 COE results 2025-2026 (as summarised in research; refresh from data.gov.sg dataset d_69b3380ad7e51aff3a7dcc84eba52b8a)"
+    },
+    "caveat": "Typical figures to start from, not quotes. Insurance $1,500/yr and road tax ~$62/month come from a published worked example (Corolla Altis); HDB season parking from $80/month; servicing $1,000/yr and 15,000 km/yr are rough guesses. Replace them with yours."
+  },
 };
 
 export const PARKING_DEFAULTS = {
