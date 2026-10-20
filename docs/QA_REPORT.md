@@ -1,6 +1,7 @@
 # QA report: Drive or MRT, testing and remediation
 
 **Date:** 2026-10-20 · **Code tested:** `main` @ `62fb578` (live) for reproduction; branch `claude/new-session-p75bbc` (main + PR #4 + these fixes) for remediation.
+**Results recorded on:** commit `2ab2049`, rebased onto `main` @ `75e06ba` (re-run after rebase: browser 32 PASS / 0 FAIL / 3 BLOCKED; unit 218/218).
 **Environment:** Node v22.22.0; Playwright 1.56.1 with Chromium, iPhone 13 profile unless stated, `Asia/Singapore` time zone; the OneMap/LTA server is always mocked.
 **Spec:** the attached `Drive_or_MRT_QA_Test_and_Remediation_Brief.md` did **not** arrive with the request: only the architecture-plan PDF, the product-build-os zip and screenshots were in the upload folder. Test cases here are derived from the written requirements in the request. They will be mapped to the brief's cases once it is re-attached.
 
