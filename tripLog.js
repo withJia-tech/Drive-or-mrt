@@ -135,3 +135,35 @@ export function makeCarSettings(storage = globalThis.localStorage, key = 'dom.ca
     },
   };
 }
+
+/**
+ * Your car's full cost, set up once (step 3). Price is required; everything
+ * else is checked against sensible ranges. On this phone only.
+ */
+export function makeOwnership(storage = globalThis.localStorage, key = 'dom.carOwn.v1') {
+  const RANGES = {
+    price: [1000, 2000000], endValue: [0, 2000000], yearsKept: [1, 20],
+    insurancePerYear: [0, 20000], roadTaxPerYear: [0, 20000], servicingPerYear: [0, 20000],
+    seasonParkingPerMonth: [0, 1000], kmPerYear: [1000, 100000],
+  };
+  const clean = (o) => {
+    if (!o || typeof o !== 'object') return null;
+    const c = {};
+    for (const [k, [lo, hi]] of Object.entries(RANGES)) {
+      const n = Number(o[k]);
+      if (o[k] === null || o[k] === undefined || o[k] === '' || !Number.isFinite(n) || n < lo || n > hi) return null;
+      c[k] = n;
+    }
+    return c.endValue <= c.price ? c : null;
+  };
+  return {
+    get() {
+      try { return clean(JSON.parse(storage?.getItem(key) || 'null')); } catch { return null; }
+    },
+    set(o) {
+      const c = clean(o);
+      if (!storage || !c) return false;
+      try { storage.setItem(key, JSON.stringify(c)); return true; } catch { return false; }
+    },
+  };
+}

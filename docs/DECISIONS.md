@@ -366,3 +366,13 @@ Owner's challenge: decisions aren't purely about cost, and Calendar travel alert
   - cheaper and faster → says nothing
   Costs are return totals and minutes one way, so minutes are doubled. Needs 3 informative trips in a situation (same back-off). Crossing bounds are reported as "isn't about money or minutes here".
 - **"What your trips say" panel**, show-only: value of time per situation, top reasons, usual slip, arrive-by on-time rate, "would choose differently". When train times are estimates it adds a caveat that the $/hr figures are rough.
+
+## Revision: learn why she chooses, step 3 — your car's true cost (2026-10-20)
+
+- **One-time setup** under "Your car": price paid including COE, years kept (10), value at the end, insurance, road tax, servicing and tyres, season parking, and km a year. The price must be hers. Other blanks are prefilled from `fare-defaults.json` → `car` (H10): labelled, dated and sourced, with the COE hint from LTA's January 2026 results. The car block lives in the existing assumptions file, not a new one: it's already loaded, mirrored and drift-tested.
+- **Two lenses, switchable** (owner choice), remembered per phone:
+  - **This trip (cash):** petrol, parking, ERP and wear (servicing and tyres per km). Wear does grow with each trip.
+  - **All-in:** adds a per-km share of fixed costs, (depreciation + insurance + road tax + season parking) × 12 ÷ km a year. Labelled: "includes costs you pay whether or not you drive today".
+  The lens flows through `computeAll` (`driveExtra`), so the winner, verdict and share text stay consistent. Trips are always **logged at cash cost**, whatever the lens.
+- **"Your car this year"**: fixed costs since 1 January (Singapore time) plus the logged drive trips, per trip, against what the same trips would have cost by MRT or Grab.
+- **Moved "Your car" out of "Enter distance manually"**, where location users would never have found it.

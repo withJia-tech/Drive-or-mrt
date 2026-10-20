@@ -172,3 +172,16 @@ No analytics in the app (Decision 11), so every number comes from the trip diary
   - Server down → "vivo" still finds VivoCity; nonsense → "No match".
   - Car petrol 2.66 survives a reload; ERP stays 0.
 - Not verified: live OneMap search (sandbox blocked) and a real iPhone.
+
+### Learn why she chooses, steps 1–3 (2026-10-20)
+
+- Step 1: arrive-by plan, "I'm leaving now", learned slip, next-open outcome card.
+- Step 2: reason chips on overrides; value-of-time bounds; "What your trips say".
+- Step 3: car ownership setup; Cash ↔ All-in; "Your car this year".
+- Tests: `node --test` → 188/188.
+- Phone-width runs, all hand-checked:
+  - Leave by 13:34, then 13:26 after the learned 8-min slip.
+  - "At least $14/hr" (3.65 ÷ 16 × 60), then "about $14/hr".
+  - Drive $7.25 → $7.58 cash (+$0.33 wear) → $12.31 all-in (+$4.73).
+  - $1,184 a month to own; $11,393 fixed costs to 20 October.
+- Not verified: a real iPhone; the COE hint figures are as summarised from LTA's sheet and should be checked against the PDF.

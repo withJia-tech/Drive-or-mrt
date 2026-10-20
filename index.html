@@ -628,6 +628,12 @@ body.typing-place .cta-bar { display: none; }
 .insights[hidden] { display: none; }
 .insights-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; font: 500 14px/1.5 var(--font-body); color: var(--ink); }
 
+/* ===== YOUR CAR ===== */
+.own-setup { margin-top: 18px; padding-top: 16px; border-top: 2px dashed var(--border-soft); }
+.lens { margin: 0 0 14px; }
+.lens[hidden] { display: none; }
+.car-year { font: 500 14px/1.55 var(--font-body); color: var(--ink); }
+
 /* ===== I TOOK ===== */
 .took { margin: 18px 0; }
 .took-label { font: 700 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
@@ -840,37 +846,107 @@ body.typing-place .cta-bar { display: none; }
             </div>
           </div>
 
-          <div class="disclosure" id="disc1">
-            <button type="button" class="disclosure-toggle" data-disc="disc1" aria-expanded="false" aria-controls="disc1body">
-              <span id="carLabel">Your car: petrol and fuel economy · ERP for this trip</span>
-              <span class="arrow" aria-hidden="true">▼</span>
-            </button>
-            <div class="disclosure-body" id="disc1body">
-              <div class="field">
-                <label class="field-label" for="petrol">Petrol per litre</label>
-                <div class="input-wrap">
-                  <span class="input-prefix">$</span>
-                  <input type="number" id="petrol" min="0" step="0.01" inputmode="decimal" class="has-prefix">
-                </div>
-                <p class="field-helper" id="petrolNote"></p>
-              </div>
-              <div class="field">
-                <label class="field-label" for="fuel">Fuel consumption</label>
-                <div class="input-wrap">
-                  <input type="number" id="fuel" min="1" step="0.5" inputmode="decimal" class="has-suffix">
-                  <span class="input-suffix">km/L</span>
-                </div>
-                <p class="field-helper" id="fuelNote"></p>
-              </div>
-              <div class="field">
-                <label class="field-label" for="erp">ERP for this route</label>
-                <div class="input-wrap">
-                  <span class="input-prefix">$</span>
-                  <input type="number" id="erp" min="0" step="0.50" inputmode="decimal" class="has-prefix">
-                </div>
-                <p class="field-helper">Add only if your route hits gantries. We cannot read them live.</p>
-              </div>
+        </div>
+      </div>
+      <div class="disclosure" id="disc1">
+        <button type="button" class="disclosure-toggle" data-disc="disc1" aria-expanded="false" aria-controls="disc1body">
+          <span id="carLabel">Your car: petrol and fuel economy · ERP for this trip</span>
+          <span class="arrow" aria-hidden="true">▼</span>
+        </button>
+        <div class="disclosure-body" id="disc1body">
+          <div class="field">
+            <label class="field-label" for="petrol">Petrol per litre</label>
+            <div class="input-wrap">
+              <span class="input-prefix">$</span>
+              <input type="number" id="petrol" min="0" step="0.01" inputmode="decimal" class="has-prefix">
             </div>
+            <p class="field-helper" id="petrolNote"></p>
+          </div>
+          <div class="field">
+            <label class="field-label" for="fuel">Fuel consumption</label>
+            <div class="input-wrap">
+              <input type="number" id="fuel" min="1" step="0.5" inputmode="decimal" class="has-suffix">
+              <span class="input-suffix">km/L</span>
+            </div>
+            <p class="field-helper" id="fuelNote"></p>
+          </div>
+          <div class="field">
+            <label class="field-label" for="erp">ERP for this route</label>
+            <div class="input-wrap">
+              <span class="input-prefix">$</span>
+              <input type="number" id="erp" min="0" step="0.50" inputmode="decimal" class="has-prefix">
+            </div>
+            <p class="field-helper">Add only if your route hits gantries. We cannot read them live.</p>
+          </div>
+          <div class="own-setup" id="ownSetup">
+            <div class="took-label">What owning it costs <span class="optional-tag">optional, set once</span></div>
+            <p class="field-helper" id="ownHint"></p>
+              <div class="field">
+                <label class="field-label" for="own_price">Price you paid, incl. COE</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_price" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_yearsKept">Years you'll keep it</label>
+                <div class="input-wrap">
+                  
+                  <input type="number" id="own_yearsKept" min="0" inputmode="decimal" class="has-suffix">
+                  <span class="input-suffix">yrs</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_endValue">Value at the end (PARF / scrap)</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_endValue" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_insurancePerYear">Insurance a year</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_insurancePerYear" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_roadTaxPerYear">Road tax a year</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_roadTaxPerYear" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_servicingPerYear">Servicing and tyres a year</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_servicingPerYear" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_seasonParkingPerMonth">Season parking a month</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">$</span>
+                  <input type="number" id="own_seasonParkingPerMonth" min="0" inputmode="decimal" class="has-prefix">
+                  
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="own_kmPerYear">Km you drive a year</label>
+                <div class="input-wrap">
+                  
+                  <input type="number" id="own_kmPerYear" min="0" inputmode="decimal" class="has-suffix">
+                  <span class="input-suffix">km</span>
+                </div>
+              </div>
+            <button type="button" class="edit-assumptions-btn" id="ownSave">Save my car</button>
+            <p class="took-status" id="ownStatus" role="status" aria-live="polite"></p>
           </div>
         </div>
       </div>
@@ -992,6 +1068,13 @@ body.typing-place .cta-bar { display: none; }
       <button type="button" class="took-btn leaving-btn" id="leavingBtn">🚶 I'm leaving now</button>
       <p class="took-status" id="leavingStatus" role="status" aria-live="polite"></p>
     </div>
+    <div class="lens" id="lensRow" hidden>
+      <div class="took-buttons" role="group" aria-label="How to count driving">
+        <button type="button" class="took-btn chip" data-lens="cash" aria-pressed="true">This trip (cash)</button>
+        <button type="button" class="took-btn chip" data-lens="allin" aria-pressed="false">All-in (with ownership)</button>
+      </div>
+      <p class="took-status" id="lensNote"></p>
+    </div>
     <div class="compare" id="compare"></div>
     <div class="breakdown" id="driveBreakdown"></div>
     <div class="breakdown" id="mrtBreakdown"></div>
@@ -1024,6 +1107,10 @@ body.typing-place .cta-bar { display: none; }
           <button type="button" class="took-btn chip" data-reason="habit" aria-pressed="false">Habit</button>
         </div>
       </div>
+    </div>
+    <div class="insights" id="carYearBox" hidden>
+      <div class="took-label">Your car this year</div>
+      <p class="car-year" id="carYearText"></p>
     </div>
     <div class="insights" id="insightsBox" hidden>
       <div class="took-label">What your trips say</div>
@@ -1079,14 +1166,14 @@ body.typing-place .cta-bar { display: none; }
 </div>
 
 <script type="module">
-import { computeAll, shareString, toNumber, round2, scheduleDurations, recommendForSchedule } from './calc.js';
+import { computeAll, shareString, toNumber, round2, scheduleDurations, recommendForSchedule, driveExtras, carYearSummary, ownershipPerMonth } from './calc.js';
 import { estimateTripDistanceKm } from './geo.js';
 import { loadAssumptions } from './defaults.js';
 import { destinationTypeForPlace } from './agent.js';
 import { fetchTransitMinutes, searchPlaces, PROXY_URL } from './transit.js';
 import { localMatches, mergeResults } from './places.js';
 import { contextOf, directionOf, patternFor, describePattern, slipMinutes, pendingOutcome, valueOfTimeBounds, describeValueOfTime, outcomeSummary, situationLabel } from './habits.js';
-import { makeTripLog, makeSavedPlaces, makeCarSettings } from './tripLog.js';
+import { makeTripLog, makeSavedPlaces, makeCarSettings, makeOwnership } from './tripLog.js';
 
 const $ = (id) => document.getElementById(id);
 const money = (n) => `$${n.toFixed(2)}`;
@@ -1111,6 +1198,10 @@ let phoneStorage = null;
 try { phoneStorage = window.localStorage; } catch { phoneStorage = null; }
 const tripLog = makeTripLog(phoneStorage);
 const savedPlaces = makeSavedPlaces(phoneStorage);
+const ownership = makeOwnership(phoneStorage);
+function lensChoice() {
+  try { return phoneStorage?.getItem('dom.lens.v1') === 'allin' ? 'allin' : 'cash'; } catch { return 'cash'; }
+}
 /* The trip on screen: situation and verdict when it was shown, plus its log id once tapped. */
 let currentTrip = null;
 let lastResult = null;
@@ -1338,7 +1429,14 @@ function calculate({ quiet = false } = {}) {
   const input = currentInput();
   if (!input.distance) return;
 
-  const r = computeAll(input, fares);
+  // Your car (if set up): wear always; the ownership share only in the all-in lens.
+  const own = ownership.get();
+  const extras = driveExtras(input, own);
+  const lens = own ? lensChoice() : 'cash';
+  const r = computeAll({ ...input, driveExtra: extras.wear + (lens === 'allin' ? extras.ownership : 0) }, fares);
+  r.extras = extras;
+  r.lens = lens;
+  r.driveCash = round2(r.drive - (lens === 'allin' ? extras.ownership : 0));
   const dest = destById($('destType').value);
   lastResult = r;
   lastMeta = {
@@ -1376,6 +1474,8 @@ function calculate({ quiet = false } = {}) {
     <div class="breakdown-row"><span class="label">Petrol · ${(input.distance * 2).toFixed(1)} km return</span><span class="val">${money(r.petrol)}</span></div>
     <div class="breakdown-row"><span class="label">Parking · ${input.parkHours}h × ${money(input.parkRate)}</span><span class="val">${money(r.parking)}</span></div>
     ${r.erp > 0 ? `<div class="breakdown-row"><span class="label">ERP</span><span class="val">${money(r.erp)}</span></div>` : ''}
+    ${r.extras && r.extras.wear > 0 ? `<div class="breakdown-row"><span class="label">Wear · servicing and tyres</span><span class="val">${money(r.extras.wear)}</span></div>` : ''}
+    ${r.lens === 'allin' && r.extras && r.extras.ownership > 0 ? `<div class="breakdown-row"><span class="label">Share of owning it · COE, depreciation, insurance, road tax, season parking</span><span class="val">${money(r.extras.ownership)}</span></div>` : ''}
     <div class="breakdown-row total"><span class="label">All in</span><span class="val">${money(r.drive)}</span></div>`;
 
   $('mrtBreakdown').innerHTML = `
@@ -1403,6 +1503,7 @@ function calculate({ quiet = false } = {}) {
   paintPlan(r, input);
   paintPattern(r);
   paintInsights();
+  paintCar(r);
 
   // A quiet redraw (a real train time arriving later) must not jump the page.
   if (quiet) return;
@@ -1727,7 +1828,7 @@ function paintPlan(r, input) {
   currentTrip.mrtSource = d.sources.mrt;
   currentTrip.shown = {
     recommended: r.winner, variant: 'show-only',
-    costs: { mrt: r.mrt, drive: r.drive, grab: r.grab },
+    costs: { mrt: r.mrt, drive: r.driveCash, grab: r.grab }, // always cash, whatever the lens
     minutes: round(d.durations), suggestedLeaveBy: null, deadline: null,
   };
 
@@ -1741,7 +1842,7 @@ function paintPlan(r, input) {
   const buffer = 10 + (slip ? slip.minutes : 0);
   const plan = recommendForSchedule({
     timingMode: 'arrive_by', requestedAt: deadline, now, bufferMin: buffer,
-    costs: { mrt: r.mrt, drive: r.drive, grab: r.grab },
+    costs: { mrt: r.mrt, drive: r.driveCash, grab: r.grab },
     durations: d.durations, worstDurations: d.worst,
   });
   const mode = plan.recommended;
@@ -1861,6 +1962,48 @@ function paintInsights() {
   $('insightsBox').hidden = lines.length === 0;
 }
 
+/* ------------------------------------------- your car's true cost (step 3) */
+const OWN_KEYS = ['price', 'yearsKept', 'endValue', 'insurancePerYear', 'roadTaxPerYear', 'servicingPerYear', 'seasonParkingPerMonth', 'kmPerYear'];
+const dollars = (n) => `$${Math.round(n).toLocaleString('en-SG')}`;
+(function setupOwnershipForm() {
+  const car = fares.car;
+  const saved = ownership.get();
+  OWN_KEYS.forEach((k) => {
+    const el = $(`own_${k}`);
+    if (saved) el.value = saved[k];
+    else if (k !== 'price' && Number.isFinite(car[k])) el.value = car[k]; // typical, labelled; price is hers
+  });
+  $('ownHint').textContent = `COE alone was about ${dollars(car.coeHint.catA)} (Cat A) and ${dollars(car.coeHint.catB)} (Cat B) in ${car.coeHint.round}. ${car.caveat}`;
+  $('ownSave').addEventListener('click', () => {
+    const o = Object.fromEntries(OWN_KEYS.map((k) => [k, $(`own_${k}`).value]));
+    if (ownership.set(o)) {
+      $('ownStatus').textContent = `Saved on this phone: about ${dollars(ownershipPerMonth(ownership.get()))} a month to own, before petrol and parking.`;
+      if (!$('result').hidden) calculate({ quiet: true });
+    } else {
+      $('ownStatus').textContent = 'Please fill in the price you paid, and check the numbers look right (value at the end can\'t be more than the price).';
+    }
+  });
+})();
+
+document.querySelectorAll('#lensRow [data-lens]').forEach((b) => b.addEventListener('click', () => {
+  try { phoneStorage?.setItem('dom.lens.v1', b.dataset.lens); } catch { /* per-view only */ }
+  if (!$('result').hidden) calculate({ quiet: true });
+}));
+
+function paintCar(r) {
+  const own = ownership.get();
+  $('lensRow').hidden = !own;
+  document.querySelectorAll('#lensRow [data-lens]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lens === r.lens)));
+  $('lensNote').textContent = r.lens === 'allin'
+    ? 'All-in includes costs you pay whether or not you drive today. Useful for "is owning worth it?", not for one trip.'
+    : (own ? 'Petrol, parking, ERP and wear: what this trip actually costs you.' : '');
+  const y = own ? carYearSummary(tripLog.all(), own, new Date()) : null;
+  $('carYearBox').hidden = !y;
+  if (y) {
+    $('carYearText').textContent = `Since 1 Jan: about ${dollars(y.fixedSoFar)} in fixed car costs plus ${money(y.driveCash)} in trip costs, over ${y.driveTrips} drive trip${y.driveTrips === 1 ? '' : 's'} you logged, so about ${dollars(y.perDriveTrip)} a trip. The same trips by MRT: ${money(y.sameByMrt)}; by Grab: ${money(y.sameByGrab)}. Only trips logged with "I took Drive" count.`;
+  }
+}
+
 /* Shown only when her own pattern differs from the verdict. Never changes it. */
 function paintPattern(r) {
   const habits = fares.habits;
@@ -1896,6 +2039,7 @@ document.querySelectorAll('#tookRow .took-btn').forEach((btn) => {
       document.querySelectorAll('#reasonRow .chip').forEach((b) => b.setAttribute('aria-pressed', 'false'));
     }
     paintInsights();
+    if (lastResult) paintCar(lastResult);
   });
 });
 

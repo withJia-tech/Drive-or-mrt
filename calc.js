@@ -265,6 +265,66 @@ export function recommendForSchedule({
   };
 }
 
+/* ------------------------------------------------- your car's true cost */
+
+/**
+ * What owning the car costs a month, whether or not it moves:
+ * depreciation ((price - value at the end) over the months kept) +
+ * insurance and road tax spread monthly + season parking.
+ */
+export function ownershipPerMonth(c) {
+  return (c.price - c.endValue) / (c.yearsKept * 12)
+    + (c.insurancePerYear + c.roadTaxPerYear) / 12
+    + c.seasonParkingPerMonth;
+}
+
+/** Those fixed costs per km driven. */
+export function ownershipPerKm(c) {
+  return (ownershipPerMonth(c) * 12) / c.kmPerYear;
+}
+
+/** Servicing and tyres per km: this does grow with every trip. */
+export function wearPerKm(c) {
+  return c.servicingPerYear / c.kmPerYear;
+}
+
+/** For one return trip: wear (cash lens) and the ownership share (all-in lens). */
+export function driveExtras({ distance }, car) {
+  if (!car) return { wear: 0, ownership: 0 };
+  const km = distance * 2;
+  return { wear: round2(km * wearPerKm(car)), ownership: round2(km * ownershipPerKm(car)) };
+}
+
+const sgParts = (d) => Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Singapore', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23',
+}).formatToParts(d).map((p) => [p.type, Number(p.value)]));
+
+/**
+ * "Your car this year": fixed costs so far (months elapsed, Singapore time)
+ * against the drive trips she logged, and what those same trips would have
+ * cost by MRT or Grab (from the costs shown at the time).
+ */
+export function carYearSummary(log, car, now = new Date()) {
+  if (!car) return null;
+  const n = sgParts(now);
+  const daysInMonth = new Date(Date.UTC(n.year, n.month, 0)).getUTCDate();
+  const months = (n.month - 1) + (n.day - 1 + n.hour / 24) / daysInMonth;
+  const drives = (Array.isArray(log) ? log : []).filter((e) => e && e.chose === 'drive'
+    && e.shown && e.shown.costs && Number.isFinite(Date.parse(e.at)) && sgParts(new Date(e.at)).year === n.year);
+  if (drives.length === 0) return null;
+  const sum = (k) => round2(drives.reduce((t, e) => t + (Number(e.shown.costs[k]) || 0), 0));
+  const fixed = ownershipPerMonth(car) * months;
+  const driveCash = sum('drive');
+  return {
+    driveTrips: drives.length,
+    fixedSoFar: Math.round(fixed),
+    driveCash,
+    sameByMrt: sum('mrt'),
+    sameByGrab: sum('grab'),
+    perDriveTrip: Math.round((fixed + driveCash) / drives.length),
+  };
+}
+
 /* --------------------------------------------------------------- aggregate */
 
 /**
@@ -281,7 +341,9 @@ export function computeAll(input, assumptions) {
 
   const petrol = petrolCost(input);
   const parking = parkingCost(input);
-  const drive = driveTotal(input);
+  // Your car (optional): wear, or wear + a share of ownership, per the lens chosen.
+  const driveExtra = Number.isFinite(input.driveExtra) && input.driveExtra > 0 ? input.driveExtra : 0;
+  const drive = driveTotal(input) + driveExtra;
   const mrt = mrtTotal(input);
   const grab = grabTotal({ grabFare });
   const walk = walkCost(input);
@@ -290,6 +352,7 @@ export function computeAll(input, assumptions) {
     petrol: round2(petrol),
     parking: round2(parking),
     erp: round2(input.erp),
+    driveExtra: round2(driveExtra),
     drive: round2(drive),
     mrt: round2(mrt),
     grab: round2(grab),
