@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "lastReviewed": "2026-08-23",
+  "logicId": "H9",
+  "status": "heuristic",
+  "windingFactor": 1.35,
+  "caveat": "Distance is the straight-line (great-circle) gap between your phone and the destination, multiplied by a flat 1.35 to approximate real roads. It is not a routed driving distance — no expressway, one-way or traffic model — so treat it as a starting estimate and edit the field if you know the real figure.",
+  "upgradePath": "Phase 2 swaps the flat winding factor and the fixed landmark list for a routing service or an on-map destination pin, turning the estimate into an actual road distance. Only the source of the two coordinates changes; the arithmetic in geo.js does not.",
+  "places": [
+    { "id": "sgh", "label": "Singapore General Hospital", "group": "Hospitals", "lat": 1.2793, "lng": 103.8348, "source": "Outram Road" },
+    { "id": "nuh", "label": "National University Hospital", "group": "Hospitals", "lat": 1.2939, "lng": 103.7834, "source": "Kent Ridge" },
+    { "id": "ttsh", "label": "Tan Tock Seng Hospital", "group": "Hospitals", "lat": 1.3216, "lng": 103.8459, "source": "Novena" },
+    { "id": "cgh", "label": "Changi General Hospital", "group": "Hospitals", "lat": 1.3403, "lng": 103.9490, "source": "Simei" },
+    { "id": "ktph", "label": "Khoo Teck Puat Hospital", "group": "Hospitals", "lat": 1.4241, "lng": 103.8384, "source": "Yishun" },
+    { "id": "mount-e", "label": "Mount Elizabeth Hospital", "group": "Hospitals", "lat": 1.3050, "lng": 103.8355, "source": "Orchard" },
+    { "id": "gleneagles", "label": "Gleneagles Hospital", "group": "Hospitals", "lat": 1.3074, "lng": 103.8180, "source": "Napier Road" },
+    { "id": "ion", "label": "ION Orchard", "group": "Malls & shopping", "lat": 1.3040, "lng": 103.8318, "source": "Orchard Road" },
+    { "id": "raffles-city", "label": "Raffles City", "group": "Malls & shopping", "lat": 1.2934, "lng": 103.8534, "source": "City Hall" },
+    { "id": "vivocity", "label": "VivoCity", "group": "Malls & shopping", "lat": 1.2643, "lng": 103.8222, "source": "HarbourFront" },
+    { "id": "jem", "label": "JEM", "group": "Malls & shopping", "lat": 1.3331, "lng": 103.7434, "source": "Jurong East" },
+    { "id": "tampines-mall", "label": "Tampines Mall", "group": "Malls & shopping", "lat": 1.3527, "lng": 103.9449, "source": "Tampines" },
+    { "id": "nex", "label": "NEX", "group": "Malls & shopping", "lat": 1.3505, "lng": 103.8720, "source": "Serangoon" },
+    { "id": "causeway-point", "label": "Causeway Point", "group": "Malls & shopping", "lat": 1.4360, "lng": 103.7862, "source": "Woodlands" },
+    { "id": "changi-airport", "label": "Changi Airport / Jewel", "group": "Airport & landmarks", "lat": 1.3592, "lng": 103.9894, "source": "Changi" },
+    { "id": "marina-bay-sands", "label": "Marina Bay Sands", "group": "Airport & landmarks", "lat": 1.2834, "lng": 103.8607, "source": "Marina Bay" },
+    { "id": "sentosa", "label": "Sentosa (Beach Station)", "group": "Airport & landmarks", "lat": 1.2494, "lng": 103.8303, "source": "Sentosa" },
+    { "id": "sports-hub", "label": "Singapore Sports Hub", "group": "Airport & landmarks", "lat": 1.3040, "lng": 103.8746, "source": "Kallang" }
+  ]
+}

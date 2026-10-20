@@ -13,7 +13,7 @@
     "mrtFare": 1.8,
     "walkTime": 10,
     "hourlyRate": 25,
-    "fareNote": "Cross-island averages around $1.80.",
+    "fareNote": "Check the SMRT or bus app for the exact fare — we don't estimate it. Cross-island averages around $1.80.",
     "hourlyNote": "$4,000 a month is roughly $25/hr (MoneySense)."
   },
   "grabEstimate": {
@@ -28,6 +28,8 @@
     "mrtKmh": 25,
     "grabKmh": 40,
     "grabBufferMin": 6,
+    "grabWaitWorstMin": 15,
+    "grabWaitNote": "Assumption, not data. grabBufferMin is a typical wait for the car; grabWaitWorstMin is a bad-day wait (rain, peak). Arrive-by plans use the worst case so a Grab plan is never the one that makes you late.",
     "returnJourney": true,
     "caveat": "H3 and H4. No traffic model, no transfer or platform-wait model. The MRT figure is the most under-modelled number in the build.",
     "note": "Times are for the whole return journey, matching the costs, which are all return figures too. The drive buffer is time spent finding a space; the Grab buffer is time spent waiting for the car."
@@ -41,5 +43,17 @@
     "maxDistanceKm": 300,
     "maxParkHours": 72,
     "caveat": "Guards against absurd input. Singapore is about 50 km end to end, so 300 km of one-way driving is already generous."
+  },
+  "habits": {
+    "bands": [
+      { "id": "morning", "label": "Mornings", "fromHour": 5, "toHour": 10 },
+      { "id": "day", "label": "Daytime", "fromHour": 10, "toHour": 17 },
+      { "id": "evening", "label": "Evenings", "fromHour": 17, "toHour": 21 },
+      { "id": "late", "label": "Late nights", "fromHour": 21, "toHour": 5 }
+    ],
+    "minSame": 3,
+    "window": 5,
+    "placeRadiusM": 300,
+    "caveat": "Owner decision 2026-10-20. Band edges are assumptions, Singapore time. A pattern is shown only when at least minSame of the last window trips in the same situation went the same way. Shown, never applied to the verdict (show-only)."
   }
 }

@@ -41,7 +41,8 @@ export const FARE_DEFAULTS = {
     mrtFare: 1.8,
     walkTime: 10,
     hourlyRate: 25,
-    fareNote: 'Cross-island averages around $1.80.',
+    fareNote:
+      "Check the SMRT or bus app for the exact fare — we don't estimate it. Cross-island averages around $1.80.",
     hourlyNote: '$4,000 a month is roughly $25/hr (MoneySense).',
   },
   grabEstimate: {
@@ -57,6 +58,9 @@ export const FARE_DEFAULTS = {
     mrtKmh: 25,
     grabKmh: 40,
     grabBufferMin: 6,
+    grabWaitWorstMin: 15,
+    grabWaitNote:
+      'Assumption, not data. grabBufferMin is a typical wait for the car; grabWaitWorstMin is a bad-day wait (rain, peak). Arrive-by plans use the worst case so a Grab plan is never the one that makes you late.',
     returnJourney: true,
     caveat:
       'H3 and H4. No traffic model, no transfer or platform-wait model. The MRT figure is the most under-modelled number in the build.',
@@ -74,6 +78,19 @@ export const FARE_DEFAULTS = {
     maxParkHours: 72,
     caveat:
       'Guards against absurd input. Singapore is about 50 km end to end, so 300 km of one-way driving is already generous.',
+  },
+  habits: {
+    bands: [
+      { id: 'morning', label: 'Mornings', fromHour: 5, toHour: 10 },
+      { id: 'day', label: 'Daytime', fromHour: 10, toHour: 17 },
+      { id: 'evening', label: 'Evenings', fromHour: 17, toHour: 21 },
+      { id: 'late', label: 'Late nights', fromHour: 21, toHour: 5 },
+    ],
+    minSame: 3,
+    window: 5,
+    placeRadiusM: 300,
+    caveat:
+      'Owner decision 2026-10-20. Band edges are assumptions, Singapore time. A pattern is shown only when at least minSame of the last window trips in the same situation went the same way. Shown, never applied to the verdict (show-only).',
   },
 };
 
@@ -133,13 +150,61 @@ export const PARKING_DEFAULTS = {
 };
 
 /**
+ * Landmark coordinates for the "use my location" feature (H9).
+ *
+ * These convert the phone's detected position into the one figure the
+ * calculator needs — the one-way distance — via the straight-line maths in
+ * geo.js. The coordinates are approximate and the winding factor is a flat
+ * guess, so this is a heuristic like PARKING_DEFAULTS: labelled in the UI,
+ * carrying its own caveat and upgrade path, never presented as a routed
+ * driving distance.
+ *
+ * Same mirror discipline as above: /data/landmarks.json is the source of
+ * truth and test/data-drift.test.js fails the moment this copy diverges.
+ */
+export const LANDMARK_DEFAULTS = {
+  version: '1.0.0',
+  lastReviewed: '2026-08-23',
+  logicId: 'H9',
+  status: 'heuristic',
+  windingFactor: 1.35,
+  caveat:
+    'Distance is the straight-line (great-circle) gap between your phone and the destination, multiplied by a flat 1.35 to approximate real roads. It is not a routed driving distance — no expressway, one-way or traffic model — so treat it as a starting estimate and edit the field if you know the real figure.',
+  upgradePath:
+    'Phase 2 swaps the flat winding factor and the fixed landmark list for a routing service or an on-map destination pin, turning the estimate into an actual road distance. Only the source of the two coordinates changes; the arithmetic in geo.js does not.',
+  places: [
+    { id: 'sgh', label: 'Singapore General Hospital', group: 'Hospitals', lat: 1.2793, lng: 103.8348, source: 'Outram Road' },
+    { id: 'nuh', label: 'National University Hospital', group: 'Hospitals', lat: 1.2939, lng: 103.7834, source: 'Kent Ridge' },
+    { id: 'ttsh', label: 'Tan Tock Seng Hospital', group: 'Hospitals', lat: 1.3216, lng: 103.8459, source: 'Novena' },
+    { id: 'cgh', label: 'Changi General Hospital', group: 'Hospitals', lat: 1.3403, lng: 103.9490, source: 'Simei' },
+    { id: 'ktph', label: 'Khoo Teck Puat Hospital', group: 'Hospitals', lat: 1.4241, lng: 103.8384, source: 'Yishun' },
+    { id: 'mount-e', label: 'Mount Elizabeth Hospital', group: 'Hospitals', lat: 1.3050, lng: 103.8355, source: 'Orchard' },
+    { id: 'gleneagles', label: 'Gleneagles Hospital', group: 'Hospitals', lat: 1.3074, lng: 103.8180, source: 'Napier Road' },
+    { id: 'ion', label: 'ION Orchard', group: 'Malls & shopping', lat: 1.3040, lng: 103.8318, source: 'Orchard Road' },
+    { id: 'raffles-city', label: 'Raffles City', group: 'Malls & shopping', lat: 1.2934, lng: 103.8534, source: 'City Hall' },
+    { id: 'vivocity', label: 'VivoCity', group: 'Malls & shopping', lat: 1.2643, lng: 103.8222, source: 'HarbourFront' },
+    { id: 'jem', label: 'JEM', group: 'Malls & shopping', lat: 1.3331, lng: 103.7434, source: 'Jurong East' },
+    { id: 'tampines-mall', label: 'Tampines Mall', group: 'Malls & shopping', lat: 1.3527, lng: 103.9449, source: 'Tampines' },
+    { id: 'nex', label: 'NEX', group: 'Malls & shopping', lat: 1.3505, lng: 103.8720, source: 'Serangoon' },
+    { id: 'causeway-point', label: 'Causeway Point', group: 'Malls & shopping', lat: 1.4360, lng: 103.7862, source: 'Woodlands' },
+    { id: 'changi-airport', label: 'Changi Airport / Jewel', group: 'Airport & landmarks', lat: 1.3592, lng: 103.9894, source: 'Changi' },
+    { id: 'marina-bay-sands', label: 'Marina Bay Sands', group: 'Airport & landmarks', lat: 1.2834, lng: 103.8607, source: 'Marina Bay' },
+    { id: 'sentosa', label: 'Sentosa (Beach Station)', group: 'Airport & landmarks', lat: 1.2494, lng: 103.8303, source: 'Sentosa' },
+    { id: 'sports-hub', label: 'Singapore Sports Hub', group: 'Airport & landmarks', lat: 1.3040, lng: 103.8746, source: 'Kallang' },
+  ],
+};
+
+/**
  * Load assumptions, preferring the canonical JSON and falling back to the
  * mirror above. Never rejects — the calculator must always have numbers.
- * Returns { fares, parking, source } where source is 'data' or 'fallback'.
+ * Returns { fares, parking, landmarks, source } where source is 'data' or
+ * 'fallback'. The three files stand or fall together: if any fetch fails the
+ * whole set drops to the built-in mirror, so the page never runs on a mix of
+ * live and stale assumptions.
  */
 export async function loadAssumptions(basePath = './data') {
   try {
-    const [fares, parking] = await Promise.all([
+    const [fares, parking, landmarks] = await Promise.all([
       fetch(`${basePath}/fare-defaults.json`).then((r) => {
         if (!r.ok) throw new Error(`fare-defaults ${r.status}`);
         return r.json();
@@ -148,13 +213,22 @@ export async function loadAssumptions(basePath = './data') {
         if (!r.ok) throw new Error(`parking-defaults ${r.status}`);
         return r.json();
       }),
+      fetch(`${basePath}/landmarks.json`).then((r) => {
+        if (!r.ok) throw new Error(`landmarks ${r.status}`);
+        return r.json();
+      }),
     ]);
-    return { fares, parking, source: 'data' };
+    return { fares, parking, landmarks, source: 'data' };
   } catch (err) {
     console.warn(
       '[is-it-worth-it] Could not load /data/*.json, using built-in assumptions.',
       err,
     );
-    return { fares: FARE_DEFAULTS, parking: PARKING_DEFAULTS, source: 'fallback' };
+    return {
+      fares: FARE_DEFAULTS,
+      parking: PARKING_DEFAULTS,
+      landmarks: LANDMARK_DEFAULTS,
+      source: 'fallback',
+    };
   }
 }

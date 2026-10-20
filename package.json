@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Is It Worth It? — a suite of single-purpose cost calculators for Singapore. No build step, no runtime dependencies. This file exists only so `node --test` treats the .js files as ES modules.",
+  "description": "Personal Utility Agent SG — a mobile-first, bounded trip-comparison agent over deterministic calculations, with no booking or opaque learning.",
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test"
   }
 }

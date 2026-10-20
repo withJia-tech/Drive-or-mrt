@@ -152,7 +152,7 @@ incomplete without nagging.
 
 ---
 
-## Revision: design port, and the agentic question closed
+## Revision: design port, and the original agentic decision
 
 **The visual design is Mizuno's, ported from her artifact.** The first build
 used an editorial serif treatment; it was replaced wholesale by the maximalist
@@ -175,16 +175,21 @@ Three things changed in the model as a result, all adopted from the artifact:
 - **A "if you price the walk" line.** Shown as a soft secondary row. H8 still
   holds: the MRT headline is fare-only, and a test asserts it.
 
-**Agentic capability: none, and none warranted.** Tier 2 in the handoff —
-learning driving habits, adaptive defaults from history — is not built and is
-not recommended. Assessed against the eight-factor lens, this problem is not
-orchestration-driven or credulity-driven; it is a ten-rule arithmetic problem
-over numbers the user types in. The rung on the ladder is *deterministic
-code*, and the rung above (single agent + tools) buys nothing, because there
-is no judgment to delegate: `parkRate × parkHours` is not an inference. The
-one real accuracy gap is data, and data is a CSV.
+**Superseded product decision.** The earlier build concluded that no agent was
+warranted because the calculations themselves are deterministic. The product
+direction has since been clarified: this is a bounded personal utility agent
+whose value is decision compression—interpreting a trip, asking one useful
+question and explaining the deterministic result—not replacing arithmetic
+with inference.
 
-Recorded here because "no agent needed" is a finding, not an omission.
+The original technical insight still holds. `parkRate × parkHours` remains in
+`calc.js`; the agent cannot invent or modify fares, durations or rankings. The
+agent has no booking/purchasing tools, external communications, durable memory,
+hidden reward function or opaque reinforcement learning. Better data remains
+the primary accuracy upgrade.
+
+This superseding decision is implemented in `agent.js` and locked by
+`test/agent.test.js`.
 
 ## Things kept from the original build
 
@@ -208,9 +213,53 @@ Two corrections to the artifact's own code, both a11y:
 The footer's prev/next links pointed at `#`. They are now marked "soon"
 rather than rendering as working links to calculators that do not exist.
 
+## Revision: detect the phone's location (H9)
+
+**The problem it solves.** The one figure a user must supply is the one-way
+distance, and it is the one figure they are least likely to know standing at
+the door. On a phone, the device already knows where it is, so a **Use my
+location** button reads the GPS position and fills the distance in.
+
+**How, without breaking the "no external service" line.** Reading position is
+the Web Geolocation API — a browser capability, not a third-party request, so
+the trust proposition ("we tell you what we assumed, and call nothing home")
+holds. Turning two coordinates into a distance is arithmetic: the haversine
+great-circle distance times a flat winding factor, both in `geo.js`. That put
+the new maths on the *deterministic* side of the split, so it is unit-tested
+like D1-D10 rather than only labelled — `test/geo.test.js`.
+
+**What stays a heuristic, and is treated as one.** Two things are guesses: the
+landmark coordinates and the 1.35 winding factor that stands in for real roads.
+They live in `data/landmarks.json` with a caveat and an upgrade path, mirrored
+in `defaults.js` and guarded by the same drift test as the other data files.
+The estimate is labelled at every surface — the field helper, and an H9 row in
+the assumptions panel — and the field stays editable, so the guess never
+hardens into a claimed fact. The upgrade path is a routing service or an on-map
+pin; it changes only where the two coordinates come from, not the arithmetic.
+
+**Scope held deliberately.** Locating yourself feeds the distance, and the Grab
+fare is already derived from distance (H2), so the taxi estimate updates for
+free. The MRT/bus fare is *not* estimated from distance and was not made to be:
+it stays a figure the user enters from the transit app, and its helper note now
+says so. No reverse geocoding, no address search, no map tiles — each would be
+the external dependency this build exists without.
+
+**Progressive enhancement, verified.** With no permission, a blocked prompt, a
+timeout or an unsupported device, the button reports the reason and the field
+is still typeable — the calculator is exactly what it was before. Geolocation
+needs a secure context, which the live HTTPS site and `localhost` both are.
+
 ## Verification
 
-- `node --test` — 44 unit tests, all passing.
+- `node --test` — 60 unit tests, all passing.
+- 15 browser assertions for "use my location" driven through Chromium at 390px
+  with a mocked GPS fix: the picker reveals only after a location is obtained,
+  the distance auto-fills a plausible km, a nearer landmark yields a shorter
+  distance than a far one, the Grab card reads "Estimated", the assumptions
+  panel carries the H9 provenance, a manual edit clears the stale geo note, and
+  a denied permission shows a legible fallback with the field still usable. No
+  app-resource load failures or uncaught page errors (Google Fonts is blocked
+  by this sandbox and filtered by request URL, as below).
 - 48 browser assertions against the acceptance criteria in section 7, driven
   through Chromium at 360px. All pass. Google Fonts is blocked by this build
   sandbox and is filtered by request URL rather than by console text, so a
@@ -221,4 +270,68 @@ rather than rendering as working links to calculators that do not exist.
 Not verified, and needing a real device: clipboard write on iOS Safari. The
 handler has an explicit failure branch with a `prompt()` escape hatch, but a
 headless browser is not evidence that it behaves on the platform where it is
-most likely to fail.
+most likely to fail. The same caveat applies to the real geolocation prompt on
+iOS and Android — the GPS fix above is mocked, which exercises the wiring and
+the maths but not the platform permission UI or fix accuracy.
+
+
+---
+
+## Revision: live data via one key-holding proxy (2026-10-19)
+
+**Decided by owner: yes, one tiny proxy.** "Live" (train/bus disruptions, traffic) needs LTA DataMall, which requires an `AccountKey`. A key shipped in app code is public, so a minimal free-tier proxy holds the key and passes data through.
+
+Bounds: no accounts, no storage of user trips or location, no tracking. The app must still work with the proxy down, falling back to today's labelled estimates. This narrows the plan's Decision 9 ("strictly zero-dependency") to "one optional dependency with a fallback".
+
+## Revision: feasibility-first arrive-by rule (2026-10-19)
+
+**Decided by owner: train if on time.** For an arrive-by trip, if the MRT arrives with the buffer intact, recommend it and give a leave-by time. Drive or Grab only when the train would be late, choosing the cheaper of the on-time options. If nothing is on time, recommend the shortest journey, leaving now, flagged `none_on_time`.
+
+This replaces the earlier `recommendForSchedule` rule (latest departure wins), which recommended driving even with two hours of slack. Probe, 8.9 km trip, now 12:00, arrive by 14:00: old rule → drive; new rule → MRT, leave by 13:18.
+
+Found while testing: a blank arrival time was parsed as 1 Jan 1970 (`new Date(null)`), making every mode look late. Fixed in `asDate`.
+
+Still open: leave-now / depart-at keeps the "MRT if within 15 min of the fastest" rule. Escalation reasons (rain, luggage, kids) are not wired yet. Neither the rule nor a timing input is in the UI yet.
+
+## Revision: credible journey times (brainstorm 2026-10-20)
+
+Owner: SMRT times are predictable; drive times are good; Grab varies with the wait. So the risk to leave-by times is our MRT model (road distance ÷ 25 km/h), not the trains.
+
+**Built:**
+- **Your own train time.** `scheduleDurations(input, speeds, { mrtMinutes })` uses a family-typed door-to-door MRT time when given, otherwise the estimate. It returns `sources.mrt` (`yours` / `estimate`) so the UI can label which one is used.
+- **Grab wait as a range.** New assumption `grabWaitWorstMin: 15` beside the typical `grabBufferMin: 6`. Arrive-by plans use the worst wait. A Grab that makes it only on a typical day is listed in `gambles`. If nothing is safe but a lucky Grab, the reason is `grab_gamble` and the advice is to leave now. An on-time train still wins outright. `grabBufferMin` keeps its name to avoid churning the UI and tests.
+
+**Station time table — not built.** No official station-to-station dataset was found on data.gov.sg. OneMap (Singapore Land Authority) offers free public-transport routing behind a token; it is a candidate source via the approved proxy. Owner decision pending.
+
+## Revision: OneMap train times and the location promise (2026-10-20)
+
+**Owner decisions:**
+- One-off trips get a real public-transport time from **OneMap** (Singapore Land Authority) through the small server.
+- Location is handled "like Google Maps or Grab". The old promise "location never leaves the device" becomes: **sent to OneMap only to plan the train route, never stored.** The page says so next to "Use my current location", and only when the server is switched on (`PROXY_URL` in `transit.js`). With it off, location still stays on the phone.
+
+**Precedence:** the family's own train time, then OneMap, then the 25 km/h estimate. The MRT card says which: "OneMap time" or "Time estimated".
+
+**Host: Vercel now, portable later.** The server is one web-standard handler (`proxy/handler.js`) with thin Vercel adapters (`proxy/api/`).
+- Vercel Hobby fits the family test and the widget. The owner already has an account, and the connector lets Claude deploy and read logs.
+- It blocks push alerts ("NEL down, drive today"), which need checks every few minutes; Hobby cron runs once a day.
+- A secondary source says Hobby is non-commercial only.
+- Moving to Cloudflare Workers (cron every minute, free) means adding one file: `export default { fetch: (req, env) => handle(req, env) }`.
+
+**Not verified yet:** OneMap and LTA response shapes, the `arriveBy` parameter, the token lifetime, rate limits and terms of use. All come from secondary sources, and the test fixtures say so. Replace them with real recorded responses once the owner's credentials exist.
+
+**Known gap:** when a OneMap time is used, the MRT "walk" cost line still uses the 10-minute walk assumption, not OneMap's walking minutes.
+
+## Revision: value of time is contextual — learn from her choices, show-only (2026-10-20)
+
+**Correction from the owner.** Value of time should matter to the decision. In the code until now it did not: the verdict was cash only (`selectWinner`), and the hourly rate only priced the walk on a soft line (H8). The owner's example shows why one $/hr figure is wrong. Mornings: she drives or takes a Grab even when the MRT is cheaper, because inertia is high. Work → dinner or home: she overrides toward the MRT, because the ride is decompression time. So value of time is learned per situation, from what she actually does.
+
+**Decided:**
+- **One tap after the verdict:** "Which did you take? MRT / Drive / Grab". Stored on the phone only (`tripLog.js`). Records are rebuilt from a whitelist, so they never contain coordinates. Capped at 500.
+- **Situation** = time-of-day band + trip direction (from saved Home / Work) + weekday/weekend + trip-purpose chip (`habits.js`, Singapore time). Bands and thresholds are labelled assumptions in `data/fare-defaults.json` → `habits`.
+- **Pattern** = at least 3 of the last 5 trips in the same situation went the same way. If the exact situation has too few trips, it backs off to a broader one; if it has enough trips but they're mixed, there's no pattern.
+- **Show-only.** The pattern line appears under the verdict, labelled "Your pattern", only when it differs from the verdict. **The verdict itself does not change.** Letting patterns change the verdict is a later in-app experiment: per-trip random assignment recorded in `variant`, compared within the same person (N-of-1), because a family is too small for an A/B test between people.
+- **Memory starts now.** This reverses plan Decision 3 ("no memory until validated"), deliberately, on the owner's word. It stays on the phone and is always visible.
+
+**Tension, kept visible:** the owner wants value of time to change the verdict, and also chose show-only for now. Both hold: show now, test changing the verdict later.
+
+**Also fixed:** "Parking at a this destination" wording; saved Home / Work can be picked as destinations (parking rate is asked, never guessed).

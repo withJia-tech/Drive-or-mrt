@@ -130,6 +130,141 @@ export function journeyTimes({ distance, walkTime }, speeds) {
   };
 }
 
+/** One-way journey estimates used by the arrival-first recommendation layer. */
+export function oneWayJourneyTimes({ distance, walkTime }, speeds) {
+  return {
+    drive: (distance / speeds.driveKmh) * 60 + speeds.driveBufferMin,
+    mrt: (distance / speeds.mrtKmh) * 60 + walkTime,
+    grab: (distance / speeds.grabKmh) * 60 + speeds.grabBufferMin,
+  };
+}
+
+/**
+ * One-way durations for the schedule rule, in two versions (brainstorm 2026-10-20):
+ * - `durations`: the typical journey. If the family typed their own door-to-door
+ *   train time (`mrtMinutes`), it replaces the 25 km/h guess. SMRT is predictable,
+ *   so someone who makes the trip regularly knows better than the model.
+ * - `worst`: the same, except Grab waits `grabWaitWorstMin` instead of the typical
+ *   `grabBufferMin`. Train and drive are treated as predictable.
+ * `sources.mrt` says which train time was used, so the UI can label it.
+ */
+export function scheduleDurations(input, speeds, { mrtMinutes, transitMinutes } = {}) {
+  const durations = oneWayJourneyTimes(input, speeds);
+  // Precedence: the family's own time, then OneMap's routed time, then the estimate.
+  const positive = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const own = positive(mrtMinutes);
+  const routed = positive(transitMinutes);
+  let source = 'estimate';
+  if (own !== null) { durations.mrt = own; source = 'yours'; }
+  else if (routed !== null) { durations.mrt = routed; source = 'onemap'; }
+  const worstWait = Number.isFinite(speeds.grabWaitWorstMin) ? speeds.grabWaitWorstMin : speeds.grabBufferMin;
+  const worst = { ...durations, grab: durations.grab - speeds.grabBufferMin + Math.max(worstWait, speeds.grabBufferMin) };
+  return { durations, worst, sources: { mrt: source } };
+}
+
+const asDate = (value) => {
+  // new Date(null) is 1 Jan 1970, a valid date: a blank time would read as a
+  // deadline decades ago. Blank means no time given.
+  if (value === null || value === undefined || value === '') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+/**
+ * Recommend a mode for a particular timing request.
+ *
+ * This is deliberately deterministic and conservative. A mode must satisfy
+ * the requested clock constraint before its cost can make it preferable.
+ * Public transport wins ties; a premium option wins only when it materially
+ * improves feasibility or the departure time available to the user.
+ */
+export function recommendForSchedule({
+  timingMode = 'leave_now',
+  requestedAt = null,
+  now = new Date(),
+  bufferMin = 10,
+  costs,
+  durations,
+  worstDurations = durations,
+}) {
+  const baseNow = asDate(now) || new Date();
+  const requested = asDate(requestedAt);
+  const ids = ['mrt', 'drive', 'grab'];
+  const candidates = ids.map((id) => {
+    const durationMin = Math.max(0, Number(durations[id]) || 0);
+    // Arrive-by plans on the bad-day duration, so a leave-by time is safe.
+    const worstMin = Math.max(durationMin, Number(worstDurations[id]) || 0);
+    let departAt = new Date(baseNow);
+    if (timingMode === 'depart_at' && requested) departAt = new Date(requested);
+    let typicalOk = true;
+    if (timingMode === 'arrive_by' && requested) {
+      departAt = new Date(requested.getTime() - (worstMin + bufferMin) * 60000);
+      typicalOk = requested.getTime() - (durationMin + bufferMin) * 60000 >= baseNow.getTime();
+    }
+    const arriveAt = new Date(departAt.getTime() + durationMin * 60000);
+    const feasible = timingMode !== 'arrive_by' || !requested || departAt >= baseNow;
+    // On time only if the wait is typical, not on a bad day.
+    const gamble = !feasible && typicalOk;
+    return { id, cost: costs[id], durationMin, worstMin, departAt, arriveAt, feasible, gamble };
+  });
+  const gambles = candidates.filter((candidate) => candidate.gamble).map((candidate) => candidate.id);
+
+  const feasible = candidates.filter((candidate) => candidate.feasible);
+  const cheapest = (pool) => pool.reduce((best, candidate) =>
+    candidate.cost < best.cost ? candidate : best);
+  let recommended;
+  let reason = 'compared';
+  if (timingMode === 'arrive_by' && requested) {
+    // Feasibility first (plan v0.2, owner decision 2026-10-19): if the train
+    // is on time with the buffer, recommend it and stop. Leaving earlier is
+    // not a cost here. Drive or Grab only when the train would be late, and
+    // then the cheaper of those that are on time.
+    const mrt = candidates.find((candidate) => candidate.id === 'mrt');
+    if (mrt.feasible) {
+      recommended = mrt;
+      reason = 'train_on_time';
+    } else if (feasible.length) {
+      recommended = cheapest(feasible);
+      reason = 'train_too_late';
+    } else if (gambles.length) {
+      // Nothing is safe, but something makes it on a typical day. Say so, leave now.
+      recommended = { ...cheapest(candidates.filter((candidate) => candidate.gamble)), departAt: new Date(baseNow) };
+      reason = gambles.includes('grab') ? 'grab_gamble' : 'gamble';
+    } else {
+      // Nobody makes it. Back-scheduled arrivals all equal the deadline, so
+      // compare by leaving now: the shortest journey arrives least late.
+      recommended = candidates.reduce((best, candidate) =>
+        candidate.durationMin < best.durationMin ? candidate : best);
+      recommended = { ...recommended, departAt: new Date(baseNow) };
+      reason = 'none_on_time';
+    }
+  } else {
+    const pool = feasible.length ? feasible : candidates;
+    // For leave/depart requests, first avoid a premium when MRT is no more
+    // than 15 minutes slower than the fastest available option.
+    const fastest = Math.min(...pool.map((candidate) => candidate.durationMin));
+    const sensible = pool.filter((candidate) => candidate.durationMin <= fastest + 15);
+    recommended = sensible.reduce((best, candidate) =>
+      candidate.cost < best.cost ? candidate : best);
+  }
+
+  return {
+    timingMode,
+    requestedAt: requested,
+    bufferMin,
+    recommended: recommended.id,
+    reason,
+    gambles,
+    leaveBy: recommended.departAt,
+    allFeasible: candidates.every((candidate) => candidate.feasible),
+    candidates,
+  };
+}
+
 /* --------------------------------------------------------------- aggregate */
 
 /**
@@ -169,6 +304,7 @@ export function computeAll(input, assumptions) {
     band: verdictBand({ drive, mrt }, assumptions.verdict.thresholdSgd),
     delta: round2(Math.abs(drive - mrt)),
     times: journeyTimes(input, assumptions.speeds),
+    oneWayTimes: oneWayJourneyTimes(input, assumptions.speeds),
   };
 }
 
