@@ -1,0 +1,59 @@
+# Checks for Drive or MRT.
+#
+# Runs on every pull request to main. A ruleset on main requires both jobs
+# ("unit" and "browser") to pass before a PR can merge, and Vercel only
+# deploys main, so untested code can't reach the live site.
+
+name: Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No dependencies to install.
+      - run: node --test
+
+  browser:
+    name: browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Same Playwright version the suite was verified on. --no-save keeps
+      # package.json and the repo free of a lockfile.
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      # Exits 1 only on a FAIL; BLOCKED cases (real iPhone, live OneMap,
+      # VoiceOver) are recorded but don't fail the run.
+      - run: node e2e/run.cjs
+      - name: Keep results and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: e2e/out/
+          retention-days: 14
+          if-no-files-found: warn

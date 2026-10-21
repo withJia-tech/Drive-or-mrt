@@ -45,9 +45,15 @@ The OS package's example (`DRIVE_OR_MRT_KICKOFF.md`) was written before the repo
 | Flat $5 "too close to call" threshold is right for big trips | Assumed (H7) | Owner call; alternative is `max(5, 0.15 × drive)` |
 | Parking rates are realistic | Heuristic (H1) | Phase 2: HDB/URA published rates |
 
+## Guardrails (2026-10-21)
+
+- **Pull-request checks:** `unit` and `browser` in `.github/workflows/ci.yml`. The broken GitHub Pages workflow was removed.
+- **Claude Code hooks:** `.claude/settings.json` blocks a `git push` while unit tests fail.
+- **Open, owner step:** add a ruleset on `main` requiring `unit` and `browser` with an empty bypass list. Until then, the checks report but don't block a merge.
+
 ## Note on deploy
 
-Pages publishes the whole repo folder, so `AGENTS.md`, `CLAUDE.md`, this file and `.claude/` will be public once merged to `main`. None contain secrets.
+Vercel serves the whole repo folder, so `AGENTS.md`, `CLAUDE.md`, this file and `.claude/` are public on the live site. None contain secrets.
 
 ---
 
