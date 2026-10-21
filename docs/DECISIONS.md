@@ -384,4 +384,13 @@ Full report: `docs/QA_REPORT.md`. Seven defects were confirmed and fixed, each w
 - **Inputs are refused, not coerced.** `FIELD_RULES` in `calc.js` sets plausible ranges; the page shows what to fix. `toNumber` stays as an internal safety net.
 - **A typed distance can finish without a destination.** The parking type and rate are then asked for, never assumed to be $0.
 - **The "Why this call" wording moved to `verdict.js`** (pure, tested). It follows the actual cheapest mode and the actual largest driving cost.
-- **Browser tests live in `e2e/`, not `test/`.** Node's test runner picks up everything under `test/`, and CI has no browser.
+- **Browser tests live in `e2e/`, not `test/`.** Node's test runner picks up everything under `test/`, and the fast `unit` check shouldn't need a browser.
+
+## Guardrails: untested code can't go live (2026-10-21)
+
+Why: PR #4 merged and deployed before the QA fixes were on it, so the live site carried seven known defects. Nothing was checking: the only workflow ran *after* a merge, targeted GitHub Pages (never enabled) and failed every time, and Vercel deploys `main` regardless.
+- **Every PR runs `unit` and `browser`** (`.github/workflows/ci.yml`). Playwright is pinned to 1.56.1, the version the suite was verified on, and installed with `--no-save`, so there's still no lockfile. BLOCKED cases don't fail the run.
+- **`main` requires both checks** through a GitHub ruleset with an empty bypass list, so it also binds merges Claude makes on the owner's behalf. Vercel needs no change: it only deploys what reaches `main`.
+- **Claude Code hooks** (`.claude/settings.json`): a `git push` runs `node --test` first and is blocked if it fails. The browser suite stays in CI because it takes about a minute.
+- **The GitHub Pages workflow was removed.**
+- Not added: multi-agent review or AI evals. The engine is deterministic rules, and ordinary tests cover it.

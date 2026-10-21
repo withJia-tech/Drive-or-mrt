@@ -64,7 +64,7 @@ python3 -m http.server 8099
 
 ## Testing
 
-Three levels. The first runs everywhere with no install; the browser suite needs Playwright.
+Three levels. The first runs everywhere with no install; the browser suite needs Playwright. Both run automatically on every pull request (see Deploying), and a `git push` from Claude Code runs the unit tests first.
 
 ### 1. Unit and integration tests (no install)
 
@@ -149,9 +149,12 @@ product exists to surface from a guess into a fact.
 
 ## Deploying
 
-Repository settings → Pages → Source: **GitHub Actions**. The workflow runs
-`node --test` on every push to `main` and only deploys if it passes. There is
-no build step.
+Vercel (project `driveormrt`) deploys `main` automatically; there is no build
+step. Every pull request runs two checks in `.github/workflows/ci.yml`:
+`unit` (`node --test`) and `browser` (`node e2e/run.cjs` on Chromium at iPhone
+13 size). A ruleset on `main` requires both to pass before a PR can merge, so
+only tested code goes live. The browser run's results and screenshots are
+attached to each run as the `e2e-results` artifact.
 
 ## Status
 

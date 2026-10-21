@@ -10,7 +10,8 @@ Use the project's existing runnable scripts and Claude Code's `/run`, `/verify` 
 - Browser suite: `node e2e/run.cjs` (Playwright; starts its own server, mocks the small server, writes `e2e/out/`). Defect regressions are `QA-D*`; add one for every confirmed defect before fixing it.
 - Launch: `python3 -m http.server 8099` then open `http://127.0.0.1:8099/`. ES modules do not load over `file://`.
 - Phone check: Playwright is installed globally in the cloud sandbox; use device `iPhone 13`. Real flow: grant geolocation, click `#geoBtn`, type in `#destSearch` and click a `#destResults .place-option`, optionally fill `#arriveBy`, fill `#parkHours` (and `#parkRate` if shown), then the button "Compare my options". Use `page.clock.setFixedTime` for time-of-day behaviour.
-- Deploy: push to `main` runs tests, then uploads the **whole repo folder** to GitHub Pages. Anything committed is public on the live site.
+- Deploy: Vercel auto-deploys `main`. Every PR runs the `unit` and `browser` checks (`.github/workflows/ci.yml`), and a ruleset on `main` requires both before merging. Vercel serves the whole repo folder, so anything committed is public on the live site.
+- Hooks (`.claude/settings.json`): a `git push` runs `node --test` first and is blocked if it fails; session start prints the recipe. Don't bypass them.
 - State lives in `PROJECT_STATE.md`; decisions in `docs/DECISIONS.md`. Don't start a second tracker.
 
 ## Small server (`proxy/`)
